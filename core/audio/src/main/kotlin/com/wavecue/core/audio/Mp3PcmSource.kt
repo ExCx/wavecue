@@ -179,18 +179,22 @@ class Mp3PcmSource private constructor(
         } catch (_: IllegalStateException) {
             return
         }
-        val rate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE, actualRate)
+        val rate = format.intOr(MediaFormat.KEY_SAMPLE_RATE, actualRate)
         if (rate > 0) actualRate = rate
-        val channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT, actualChannels)
+        val channels = format.intOr(MediaFormat.KEY_CHANNEL_COUNT, actualChannels)
         if (channels > 0) actualChannels = channels
-        pcmEncoding = if (format.containsKey(MediaFormat.KEY_PCM_ENCODING)) {
-            format.getInteger(MediaFormat.KEY_PCM_ENCODING)
-        } else {
-            AudioFormat.ENCODING_PCM_16BIT
-        }
+        pcmEncoding = format.intOr(MediaFormat.KEY_PCM_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
         bytesPerSample = if (pcmEncoding == AudioFormat.ENCODING_PCM_FLOAT) 4 else 2
         bytesPerFrame = actualChannels * bytesPerSample
     }
+
+    /**
+     * MediaFormat#getInteger(String, Int) only exists on API 29+, while the
+     * single-argument read works back to the minimum supported level.
+     */
+    @Suppress("DEPRECATION")
+    private fun MediaFormat.intOr(key: String, fallback: Int): Int =
+        if (containsKey(key)) getInteger(key) else fallback
 
     override fun close() {
         try {

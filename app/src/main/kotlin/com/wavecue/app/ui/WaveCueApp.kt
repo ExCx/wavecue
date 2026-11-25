@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -113,24 +114,28 @@ fun WaveCueApp() {
                         onClick = { openTab(Routes.LIBRARY) },
                         icon = { Icon(Icons.Filled.LibraryMusic, contentDescription = null) },
                         label = { Text("Library") },
+                        modifier = Modifier.testTag(TestTags.NavLibrary),
                     )
                     NavigationBarItem(
                         selected = route == Routes.PLAYLISTS || route == Routes.PLAYLIST_DETAIL,
                         onClick = { openTab(Routes.PLAYLISTS) },
                         icon = { Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = null) },
                         label = { Text("Playlists") },
+                        modifier = Modifier.testTag(TestTags.NavPlaylists),
                     )
                     NavigationBarItem(
                         selected = route == Routes.PLAYER,
                         onClick = { openTab(Routes.PLAYER) },
                         icon = { Icon(Icons.Filled.GraphicEq, contentDescription = null) },
                         label = { Text("Player") },
+                        modifier = Modifier.testTag(TestTags.NavPlayer),
                     )
                     NavigationBarItem(
                         selected = route == Routes.SETTINGS,
                         onClick = { openTab(Routes.SETTINGS) },
                         icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
                         label = { Text("Settings") },
+                        modifier = Modifier.testTag(TestTags.NavSettings),
                     )
                 }
             }
@@ -224,14 +229,14 @@ private fun NowPlayingBar(
                         )
                     }
                 }
-                IconButton(onClick = onToggle) {
+                IconButton(onClick = onToggle, modifier = Modifier.testTag(TestTags.NowPlayingToggle)) {
                     Icon(
                         if (state == PlaybackState.PLAYING) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = if (state == PlaybackState.PLAYING) "Pause" else "Play",
                         tint = WaveCueColors.TextPrimary,
                     )
                 }
-                IconButton(onClick = onNext) {
+                IconButton(onClick = onNext, modifier = Modifier.testTag(TestTags.NowPlayingNext)) {
                     Icon(
                         Icons.Filled.SkipNext,
                         contentDescription = "Next",

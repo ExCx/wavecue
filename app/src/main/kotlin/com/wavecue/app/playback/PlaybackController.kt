@@ -224,6 +224,19 @@ class PlaybackController @Inject constructor(
         engine.seekBy(deltaMs)
     }
 
+    /**
+     * Drops the active queue and stops the engine, so the UI stops advertising a
+     * Now Playing entry for tracks that no longer exist. Used by the debug test
+     * harness between cases.
+     */
+    fun clearQueue() {
+        engine.pause()
+        abandonFocus()
+        _queue.value = emptyList()
+        _index.value = -1
+        _queueLabel.value = null
+    }
+
     fun select(index: Int) {
         if (index in _queue.value.indices) {
             _index.value = index

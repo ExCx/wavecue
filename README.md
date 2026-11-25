@@ -70,11 +70,99 @@ runs on the JDK that launches Gradle (21) and targets Java 17 bytecode.
 
 ## Tests
 
-- `:core:model` — natural ordering, timecode format/parse round-trips (17 tests).
-- `:core:audio` — WAV header parser across PCM, extensible, float, RF64, odd chunks,
-  and malformed input (12 tests).
-- `:core:analysis` — waveform pyramid levels, level selection, silence thresholds, edge
-  inclusion, gap merging (16 tests).
+### Unit tests
+
+| Module | Coverage | Count |
+| --- | --- | --- |
+| `:core:model` | Natural ordering, timecode format/parse round-trips | 17 |
+| `:core:audio` | WAV header parser across PCM, extensible, float, RF64, odd chunks, malformed input | 12 |
+| `:core:analysis` | Waveform pyramid levels, level selection, silence thresholds, edge inclusion, gap merging | 16 |
+
+```bash
+./gradlew test                          # every JVM test task
+./gradlew :app:lintDebug                # lint across app and core modules
+```
+
+### Instrumented functional tests
+
+`app/src/androidTest/.../qa/` drives the installed app the way a person does: the real
+`MainActivity`, real taps and swipes, the real DocumentsUI picker and save dialog, the
+real notification shade and media session. No test calls a ViewModel to fabricate a
+result; assertions read the UI or the database after the human path ran.
+
+| Class | Flow exercised |
+| --- | --- |
+| `LibraryBrowserTest` | Picks a folder through DocumentsUI, checks only WAV/MP3 are listed in natural order, opens a track |
+| `PlaybackTest` | Play/pause holds the playhead, ±5 s steps, Previous restart-vs-step semantics, queue advance, auto-advance at end of track |
+| `WaveformNavigationTest` | Zoom in/out, pan at 8×, Fit, tap-to-seek on the waveform |
+| `SilenceDetectionTest` | Detects the exact 12–17 s gap, cancels without storing, then accepts it as an automatic flag |
+| `AnnotationsTest` | Flag create/edit/delete with an editable timecode, survives activity recreation, note create |
+| `PlaylistTest` | Create a playlist, add tracks, verify A–Z order, shuffle and restore, move/remove entries, delete playlist |
+| `ExportTest` | Exports JSON and Markdown, verifies their contents, confirms nothing is written beside the audio |
+| `NotificationTest` | Notification shows the track, media-session state, hardware play/pause keys |
+| `SettingsLifecycleTest` | A preference survives recreation, playback survives backgrounding |
+
+Fixtures are deterministic and regenerable:
+
+```bash
+python3 scripts/qa/make_fixtures.py --out build/qa-fixtures
+```
+
+| File | Ground truth |
+| --- | --- |
+| `01 Opening.wav` | 32 s, 48 kHz, 16-bit stereo; silence at 0–5 s, 12–17 s, 27–32 s |
+| `02 Middle.wav` | 10 s continuous tone |
+| `03 Finale.wav` | 3 s continuous tone, short enough to auto-advance |
+| `04 Codec Test.mp3` | 5.256 s MPEG-2.5 Layer III, 8 kHz mono (CC0 silence) |
+| `readme.txt`, `artwork.jpg`, `05 Not Supported.m4a` | must never be listed |
+
+Silence boundaries are multiples of the 64-frame analysis bin, so the detector returns
+exactly `(12000, 17000)` and the test can assert `0:12.000 → 0:17.000` and the flag at
+`0:14.500`.
+
+Folder access is persisted SAF state, so the suite is hybrid: `LibraryBrowserTest` runs
+the genuine DocumentsUI picker once per install, and a debug-only `TestHarness` clears
+the database, preferences and playback queue before each test while restoring the
+library roots. Later tests reuse the grant; every user-facing screen is still driven by
+real taps. The harness and its Hilt entry point exist only in the `debug` variant.
+
+Run it against a booted device or emulator:
+
+```bash
+adb shell mkdir -p /sdcard/WaveCueFixtures
+adb push build/qa-fixtures/. /sdcard/WaveCueFixtures/
+./gradlew connectedDebugAndroidTest
+```
+
+An emulator needs `/dev/kvm`. On this workstation the build user is not in the `kvm`
+group, so the suite is wired for CI (see below) instead of a local run. Annex: audio
+fidelity itself cannot be judged from an emulator without USB hardware, so the
+instrumented suite asserts UI state, timing, media-session state and logcat health.
+
+### Exploratory adb harness
+
+`scripts/qa/wavecue_qa.py` is the interactive half: it installs the debug APK, pushes
+fixtures, launches the app, reads the real accessibility tree, taps coordinates and
+captures evidence, all through `adb`. Use it to reproduce a report or to prototype a
+new committed test.
+
+```bash
+python3 scripts/qa/wavecue_qa.py setup                 # build fixtures, install, push, launch
+python3 scripts/qa/wavecue_qa.py dump                  # accessibility tree
+python3 scripts/qa/wavecue_qa.py tap "Choose a folder"
+python3 scripts/qa/wavecue_qa.py pick-folder WaveCueFixtures
+python3 scripts/qa/wavecue_qa.py media                 # dumpsys media_session slice
+python3 scripts/qa/wavecue_qa.py shot library          # build/qa-evidence/<run>/library.png
+```
+
+`--adb` and `--serial` select the binary and device when more than one is attached.
+
+### CI
+
+`.github/workflows/android.yml` has two jobs. The build job assembles the debug APK,
+runs all JVM tests and lint. The instrumented job boots an API 34 `google_apis` x86_64
+emulator with the standard KVM udev rule, pushes the generated fixtures and runs
+`connectedDebugAndroidTest`, then uploads the test reports and APK artifacts.
 
 ## Known limitations
 
@@ -86,8 +174,9 @@ runs on the JDK that launches Gradle (21) and targets Java 17 bytecode.
 - `MediaCodec` MP3 output rate/channel count can differ from the container; the engine
   probes the decoder before creating the sink so the reported format is the real one.
 - Runtime audio behaviour has not been verified on physical hardware in this
-  environment. A headless emulator was attempted, but this machine does not grant the
-  build user access to `/dev/kvm`, so it could not boot.
+  environment. A local headless emulator needs the build user in the `kvm` group; that
+  has not been granted on this workstation, so the instrumented suite runs in CI. Even
+  on an emulator, bit-perfect output can only be verified with a real USB DAC.
 
 ## On-device verification checklist
 

@@ -49,10 +49,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wavecue.app.ui.TestTags
 import com.wavecue.app.ui.components.EmptyState
 import com.wavecue.app.ui.components.MetaChip
 import com.wavecue.app.ui.theme.WaveCueColors
@@ -394,6 +396,7 @@ private fun TrackRow(
     Row(
         Modifier
             .fillMaxWidth()
+            .testTag(TestTags.libraryTrack(node.name))
             .clickable(onClick = onPlay)
             .padding(start = 8.dp, end = 2.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -429,7 +432,10 @@ private fun TrackRow(
             }
         }
         Box {
-            IconButton(onClick = { menu = true }) {
+            IconButton(
+                onClick = { menu = true },
+                modifier = Modifier.testTag(TestTags.libraryTrackMenu(node.name)),
+            ) {
                 Icon(
                     Icons.Filled.MoreVert,
                     contentDescription = "Track options",

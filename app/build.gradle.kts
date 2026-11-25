@@ -48,6 +48,9 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = false
+        // Instrumented runs drive real gestures and timing; system animations add
+        // flakiness without exercising any app behaviour.
+        animationsDisabled = true
     }
 }
 
@@ -86,7 +89,21 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
+    // Supplies the empty activity the Compose test rule launches into.
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    // The debug-only test harness clears the Room database between tests, so it
+    // needs RoomDatabase on the debug compile classpath.
+    debugImplementation(libs.androidx.room.runtime)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.core.ktx)
+    androidTestImplementation(libs.androidx.test.uiautomator)
+    androidTestImplementation(libs.junit)
 }

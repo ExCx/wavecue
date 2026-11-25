@@ -66,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wavecue.app.ui.TestTags
 import com.wavecue.app.ui.components.EmptyState
 import com.wavecue.app.ui.components.InfoRow
 import com.wavecue.app.ui.components.MetaChip
@@ -149,7 +151,12 @@ fun PlayerScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(Modifier.padding(10.dp)) {
-                    Box(Modifier.fillMaxWidth().height(150.dp)) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(150.dp)
+                            .testTag(TestTags.PlayerWaveform),
+                    ) {
                         WaveformView(
                             waveform = waveform,
                             durationMs = timelineMs,
@@ -207,26 +214,33 @@ fun PlayerScreen(
                             text = TimeFormat.timecode(viewportStartMs(timelineMs, viewport)),
                             style = MaterialTheme.typography.labelSmall,
                             color = WaveCueColors.TextSecondary,
+                            modifier = Modifier.testTag(TestTags.ViewportStart),
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
                             text = "${viewport.zoom.toInt().coerceAtLeast(1)}x",
                             style = MaterialTheme.typography.labelSmall,
                             color = WaveCueColors.TextSecondary,
+                            modifier = Modifier.testTag(TestTags.ZoomLabel),
                         )
                         IconButton(
                             onClick = { viewport.zoomOut() },
                             enabled = viewport.zoom > 1f,
+                            modifier = Modifier.testTag(TestTags.ZoomOut),
                         ) {
                             Icon(Icons.Filled.ZoomOut, contentDescription = "Zoom out")
                         }
                         IconButton(
                             onClick = { viewport.zoomIn() },
                             enabled = viewport.zoom < viewport.maxZoom,
+                            modifier = Modifier.testTag(TestTags.ZoomIn),
                         ) {
                             Icon(Icons.Filled.ZoomIn, contentDescription = "Zoom in")
                         }
-                        TextButton(onClick = { viewport.fit() }) { Text("Fit") }
+                        TextButton(
+                            onClick = { viewport.fit() },
+                            modifier = Modifier.testTag(TestTags.ZoomFit),
+                        ) { Text("Fit") }
                         if (viewport.suspendFollow) {
                             TextButton(onClick = { viewport.resumeFollow() }) {
                                 Text("Follow", color = WaveCueColors.Secondary)
@@ -239,11 +253,13 @@ fun PlayerScreen(
                             text = TimeFormat.timecode(positionMs),
                             style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Monospace),
                             color = WaveCueColors.Primary,
+                            modifier = Modifier.testTag(TestTags.PlayerPosition),
                         )
                         Text(
                             text = " / ${TimeFormat.timecode(timelineMs)}",
                             style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                             color = WaveCueColors.TextSecondary,
+                            modifier = Modifier.testTag(TestTags.PlayerDuration),
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
@@ -518,14 +534,20 @@ private fun TransportRow(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onPrevious, modifier = Modifier.size(52.dp)) {
+        IconButton(
+            onClick = onPrevious,
+            modifier = Modifier.size(52.dp).testTag(TestTags.TransportPrevious),
+        ) {
             Icon(
                 Icons.Filled.SkipPrevious,
                 contentDescription = "Previous track",
                 modifier = Modifier.size(28.dp),
             )
         }
-        IconButton(onClick = onBack5, modifier = Modifier.size(52.dp)) {
+        IconButton(
+            onClick = onBack5,
+            modifier = Modifier.size(52.dp).testTag(TestTags.TransportBack5),
+        ) {
             Icon(
                 Icons.Filled.Replay5,
                 contentDescription = "Back 5 seconds",
@@ -536,7 +558,7 @@ private fun TransportRow(
         FilledIconButton(
             onClick = onToggle,
             shape = CircleShape,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(64.dp).testTag(TestTags.TransportToggle),
         ) {
             if (state == PlaybackState.LOADING) {
                 CircularProgressIndicator(
@@ -553,14 +575,20 @@ private fun TransportRow(
             }
         }
         Spacer(Modifier.width(8.dp))
-        IconButton(onClick = onForward5, modifier = Modifier.size(52.dp)) {
+        IconButton(
+            onClick = onForward5,
+            modifier = Modifier.size(52.dp).testTag(TestTags.TransportForward5),
+        ) {
             Icon(
                 Icons.Filled.Forward5,
                 contentDescription = "Forward 5 seconds",
                 modifier = Modifier.size(26.dp),
             )
         }
-        IconButton(onClick = onNext, modifier = Modifier.size(52.dp)) {
+        IconButton(
+            onClick = onNext,
+            modifier = Modifier.size(52.dp).testTag(TestTags.TransportNext),
+        ) {
             Icon(
                 Icons.Filled.SkipNext,
                 contentDescription = "Next track",

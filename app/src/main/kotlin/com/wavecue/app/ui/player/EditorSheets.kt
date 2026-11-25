@@ -31,10 +31,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import com.wavecue.app.ui.TestTags
 import com.wavecue.app.ui.components.MetaChip
 import com.wavecue.app.ui.theme.WaveCueColors
 import com.wavecue.core.model.AppSettings
@@ -80,7 +82,7 @@ fun FlagEditorSheet(
                 onValueChange = { title = it },
                 label = { Text("Title") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(TestTags.FlagTitle),
             )
             Spacer(Modifier.height(10.dp))
             OutlinedTextField(
@@ -93,12 +95,12 @@ fun FlagEditorSheet(
                     if (parsed == null) Text("Use m:ss.mmm or h:mm:ss.mmm")
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(TestTags.FlagTime),
             )
             Spacer(Modifier.height(18.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (onDelete != null) {
-                    TextButton(onClick = onDelete) {
+                    TextButton(onClick = onDelete, modifier = Modifier.testTag(TestTags.FlagDelete)) {
                         Text("Delete", color = WaveCueColors.Error)
                     }
                 }
@@ -111,6 +113,7 @@ fun FlagEditorSheet(
                         onSave(time, title.ifBlank { "Flag" })
                     },
                     enabled = parsed != null,
+                    modifier = Modifier.testTag(TestTags.FlagSave),
                 ) { Text("Save") }
             }
         }
@@ -152,7 +155,7 @@ fun NoteEditorSheet(
                 label = { Text("Note") },
                 minLines = 3,
                 maxLines = 8,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(TestTags.NoteBody),
             )
             Spacer(Modifier.height(10.dp))
             OutlinedTextField(
@@ -165,12 +168,12 @@ fun NoteEditorSheet(
                     if (parsed == null) Text("Use m:ss.mmm or h:mm:ss.mmm")
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(TestTags.NoteTime),
             )
             Spacer(Modifier.height(18.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (onDelete != null) {
-                    TextButton(onClick = onDelete) {
+                    TextButton(onClick = onDelete, modifier = Modifier.testTag(TestTags.NoteDelete)) {
                         Text("Delete", color = WaveCueColors.Error)
                     }
                 }
@@ -183,6 +186,7 @@ fun NoteEditorSheet(
                         onSave(time, body)
                     },
                     enabled = parsed != null && body.isNotBlank(),
+                    modifier = Modifier.testTag(TestTags.NoteSave),
                 ) { Text("Save") }
             }
         }
@@ -282,6 +286,7 @@ fun SilenceReviewSheet(
                         onAccept(selected.sorted().map { regions[it] })
                     },
                     enabled = !scanning && selected.isNotEmpty(),
+                    modifier = Modifier.testTag(TestTags.SilenceCreate),
                 ) {
                     Text(
                         if (scanning) "Scanning…"

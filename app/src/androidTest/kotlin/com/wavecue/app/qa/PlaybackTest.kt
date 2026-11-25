@@ -1,0 +1,88 @@
+package com.wavecue.app.qa
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.wavecue.app.testing.TestHarness
+import com.wavecue.app.ui.TestTags
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import kotlin.math.abs
+
+@RunWith(AndroidJUnit4::class)
+class PlaybackTest : QaTest() {
+
+    @Test
+    fun pauseHoldsThePlayheadAndResumeContinues() {
+        playTrack(TRACK_OPENING)
+        waitUntil(15_000) { TestHarness.isPlaying(context) }
+        waitUntil(20_000) { abs(durationMs() - 32_000) <= 150 }
+        assertEquals("0:32.000", textOf(TestTags.PlayerDuration).trim().removePrefix("/").trim())
+
+        clickTag(TestTags.TransportToggle)
+        waitUntil(5_000) { !TestHarness.isPlaying(context) }
+        // Let the engine publish its final position before sampling.
+        Thread.sleep(500)
+        val held = positionMs()
+        Thread.sleep(1_500)
+        assertTrue(
+            "playhead moved from ${held}ms to ${positionMs()}ms while paused",
+            abs(positionMs() - held) <= 120,
+        )
+
+        clickTag(TestTags.TransportToggle)
+        waitUntil(5_000) { TestHarness.isPlaying(context) }
+        waitUntil(10_000) { positionMs() >= held + 700 }
+    }
+
+    @Test
+    fun fiveSecondStepsAndPreviousSemantics() {
+        playTrack(TRACK_OPENING)
+        waitUntil(15_000) { TestHarness.isPlaying(context) }
+
+        clickTag(TestTags.TransportBack5)
+        waitUntil(5_000) { positionMs() <= 800 }
+
+        clickTag(TestTags.TransportForward5)
+        waitUntil(5_000) { positionMs() >= 3_500 }
+        assertPositionNear(5_000, 2_500)
+
+        clickTag(TestTags.TransportBack5)
+        waitUntil(5_000) { positionMs() <= 2_000 }
+
+        clickTag(TestTags.TransportForward5)
+        waitUntil(5_000) { positionMs() >= 3_500 }
+        clickTag(TestTags.TransportForward5)
+        waitUntil(5_000) { positionMs() >= 8_000 }
+
+        // Past three seconds, Previous restarts the current track.
+        clickTag(TestTags.TransportPrevious)
+        waitUntil(6_000) { positionMs() <= 1_500 }
+        assertEquals(TRACK_OPENING, TestHarness.currentTrackName(context))
+
+        // Under three seconds, Previous steps back through the folder queue.
+        playTrack(TRACK_MIDDLE)
+        waitUntil(15_000) { TestHarness.currentTrackName(context) == TRACK_MIDDLE }
+        clickTag(TestTags.TransportBack5)
+        waitUntil(5_000) { positionMs() <= 800 }
+        clickTag(TestTags.TransportPrevious)
+        waitUntil(20_000) { TestHarness.currentTrackName(context) == TRACK_OPENING }
+        waitUntilText(TRACK_OPENING, 20_000, substring = true)
+    }
+
+    @Test
+    fun nextMovesThroughTheQueueAndTrackEndAdvances() {
+        playTrack(TRACK_OPENING)
+        waitUntil(15_000) { TestHarness.currentTrackName(context) == TRACK_OPENING }
+
+        clickTag(TestTags.TransportNext)
+        waitUntil(20_000) { TestHarness.currentTrackName(context) == TRACK_MIDDLE }
+        waitUntilText(TRACK_MIDDLE, 20_000, substring = true)
+
+        // 03 is three seconds long; reaching its end must advance by itself.
+        playTrack(TRACK_FINALE)
+        waitUntil(20_000) { TestHarness.currentTrackName(context) == TRACK_FINALE }
+        waitUntil(45_000) { TestHarness.currentTrackName(context) == TRACK_MP3 }
+        waitUntilText(TRACK_MP3, 20_000, substring = true)
+    }
+}

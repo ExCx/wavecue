@@ -30,10 +30,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wavecue.app.BuildConfig
+import com.wavecue.app.ui.TestTags
 import com.wavecue.app.ui.components.SectionCard
 import com.wavecue.app.ui.theme.WaveCueColors
 
@@ -108,6 +110,7 @@ fun SettingsScreen(
                         subtitle = "Ask the platform for a direct, low-latency path at the source rate. Falls back cleanly.",
                         checked = settings.exclusiveMode,
                         onCheckedChange = viewModel::setExclusiveMode,
+                        tag = TestTags.SettingsExclusive,
                     )
                     ToggleRow(
                         title = "USB bit-perfect (Android 14+)",
@@ -119,12 +122,14 @@ fun SettingsScreen(
                         checked = settings.bitPerfectUsb,
                         enabled = Build.VERSION.SDK_INT >= 34,
                         onCheckedChange = viewModel::setBitPerfectUsb,
+                        tag = TestTags.SettingsBitPerfect,
                     )
                     ToggleRow(
                         title = "Follow playhead",
                         subtitle = "Page the waveform when the playhead leaves the visible window.",
                         checked = settings.followPlayhead,
                         onCheckedChange = viewModel::setFollowPlayhead,
+                        tag = TestTags.SettingsFollowPlayhead,
                     )
                 }
             }
@@ -160,6 +165,7 @@ fun SettingsScreen(
                         subtitle = "Off by default, because album fades often touch the edges.",
                         checked = settings.includeEdgeSilence,
                         onCheckedChange = viewModel::setIncludeEdgeSilence,
+                        tag = TestTags.SettingsIncludeEdges,
                     )
                     Text(
                         "Detection runs on the analysed peak envelope. Results are always reviewed before flags are created, then titled Gap 1, Gap 2 and so on.",
@@ -240,6 +246,7 @@ private fun ToggleRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     enabled: Boolean = true,
+    tag: String? = null,
 ) {
     Row(
         Modifier
@@ -263,6 +270,7 @@ private fun ToggleRow(
             checked = checked,
             onCheckedChange = onCheckedChange,
             enabled = enabled,
+            modifier = if (tag != null) Modifier.testTag(tag) else Modifier,
         )
     }
 }

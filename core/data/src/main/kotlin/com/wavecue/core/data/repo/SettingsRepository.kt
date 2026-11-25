@@ -76,4 +76,9 @@ class SettingsRepository @Inject constructor(
     suspend fun setFollowPlayhead(value: Boolean) {
         context.settingsStore.edit { it[Keys.followPlayhead] = value }
     }
+
+    /** Drops every stored preference so the defaults above apply again. */
+    suspend fun resetToDefaults() {
+        context.settingsStore.edit { it.clear() }
+    }
 }
