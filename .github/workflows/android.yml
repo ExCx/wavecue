@@ -78,9 +78,14 @@ jobs:
             adb wait-for-device
             # The FUSE-backed /sdcard mounts a little after boot on slower runners.
             adb shell 'n=0; until [ -d /sdcard/Download ] || [ $n -ge 120 ]; do n=$((n+1)); sleep 1; done'
+            # Keep the launcher's ANR dialog from covering the app under test.
+            adb shell settings put global anr_show_ui 0 || true
+            adb shell settings put global development_settings_enabled 1 || true
+            # Let the first-boot setup and dex2oat settle before hammering the device.
+            sleep 30
             adb shell mkdir -p /sdcard/WaveCueFixtures
             adb push build/qa-fixtures/. /sdcard/WaveCueFixtures/
-            ./gradlew connectedDebugAndroidTest --stacktrace --console=plain > build/connected.log 2>&1
+            ./gradlew connectedDebugAndroidTest --stacktrace --console=plain --max-workers=2 > build/connected.log 2>&1
             status=$?
             tail -120 build/connected.log
             exit $status

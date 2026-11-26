@@ -102,12 +102,14 @@ abstract class QaTest {
 
     @After
     fun leaveSystemUi() {
+        dismissSystemDialog()
         repeat(2) {
             if (runCatching { device.currentPackageName }.getOrNull() == context.packageName) {
                 return
             }
             device.pressBack()
             device.waitForIdle()
+            dismissSystemDialog()
         }
     }
 
@@ -185,7 +187,11 @@ abstract class QaTest {
             // The first launch of DocumentsUI on a cold emulator can take well
             // over 30 s, and a Compose tap fails once the picker owns the
             // screen, so give the picker the full window before deciding.
-            opened = DocumentsUi.isPickerOpen(60_000)
+            val deadline = System.currentTimeMillis() + 60_000
+            while (!opened && System.currentTimeMillis() < deadline) {
+                opened = DocumentsUi.isPickerOpen(1_000)
+                if (!opened) dismissSystemDialog()
+            }
             if (!opened && !clicked) {
                 throw AssertionError(
                     "the folder picker never opened and the app had no Compose hierarchy; " +
@@ -285,10 +291,17 @@ abstract class QaTest {
         val allow = device.findObject(By.text("Allow"))
             ?: device.findObject(By.text("ALLOW"))
             ?: device.findObject(By.text("While using the app"))
+            ?: device.findObject(By.text("Wait"))
+            ?: device.findObject(By.text("WAIT"))
+            ?: device.findObject(By.text("Close app"))
+            ?: device.findObject(By.text("Close App"))
             ?: device.findObject(By.res("com.android.permissioncontroller", "permission_allow_button"))
             ?: device.findObject(By.res("com.android.permissioncontroller", "permission_allow_foreground_only_button"))
             ?: device.findObject(By.res("android", "permission_allow_button"))
             ?: device.findObject(By.res("android", "permission_allow_foreground_only_button"))
+            ?: device.findObject(By.res("android", "aerr_wait"))
+            ?: device.findObject(By.res("android", "aerr_close"))
+            ?: device.findObject(By.res("android", "button1"))
         allow?.click()
         device.waitForIdle()
     }
