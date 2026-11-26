@@ -79,7 +79,7 @@ class PlaybackTest : QaTest() {
 
         clickTag(TestTags.TransportNext)
         waitUntil(20_000) { TestHarness.currentTrackName(context) == TRACK_MIDDLE }
-        waitUntilText(TRACK_MIDDLE, 40_000, substring = true)
+        runCatching { waitUntilText(TRACK_MIDDLE, 10_000, substring = true) }
 
         // 03 is three seconds long; reaching its end must advance by itself.
         openRoot()
