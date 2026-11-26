@@ -29,6 +29,7 @@ object DocumentsUi {
     private const val TARGET_PKG = "com.wavecue.app"
 
     private val USE_THIS_FOLDER = Pattern.compile("(?i).*use this folder.*")
+    private val SAVE = Pattern.compile("(?i).*save.*")
 
     private val device: UiDevice
         get() = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
@@ -76,8 +77,8 @@ object DocumentsUi {
         openDrawerIfPresent()
         selectInternalStorage()
 
-        if (!waitForText(name, 15_000)) {
-            throw AssertionError("folder '$name' did not appear. Visible: ${uiSnapshot()}")
+        if (!waitForText(name, 15_000) && !searchUpwardsFor(name)) {
+            throw AssertionError("folder '$name' did not appear. ${describeForeground()}")
         }
         scrollTo(name)
 
@@ -126,13 +127,12 @@ object DocumentsUi {
 
         val save = waitAny(
             listOf(
-                By.text("Save"),
-                By.textContains("Save"),
-                By.descContains("Save"),
+                By.text(SAVE),
+                By.desc(SAVE),
                 By.res("android", "button1"),
             ) + pickerResource("action_menu_select") + pickerResource("save"),
             15_000,
-        ) ?: throw AssertionError("'Save' is missing from the document dialog. Visible: ${uiSnapshot()}")
+        ) ?: throw AssertionError("'Save' is missing from the document dialog. ${describeForeground()}")
         save.click()
         d.waitForIdle()
 
@@ -143,6 +143,18 @@ object DocumentsUi {
         d.waitForIdle()
         d.wait(Until.hasObject(By.pkg(TARGET_PKG)), 15_000)
         d.waitForIdle()
+    }
+
+    /**
+     * The picker reopens in the last-used directory, which may be a sibling of
+     * the fixture folder. Walk up until the folder appears in the listing.
+     */
+    private fun searchUpwardsFor(name: String): Boolean {
+        repeat(4) {
+            if (!navigateUp()) return false
+            if (waitForText(name, 2_000)) return true
+        }
+        return false
     }
 
     private fun openDrawerIfPresent() {
