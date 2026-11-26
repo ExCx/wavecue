@@ -27,9 +27,10 @@ if ! "$ADB" -s "$SERIAL" get-state >/dev/null 2>&1; then
     ACCEL=(-accel off)
   fi
   echo "starting $AVD (slow=$SLOW)"
-  nohup "$EMULATOR" -avd "$AVD" -no-window -no-audio -no-boot-anim \
+  setsid nohup "$EMULATOR" -avd "$AVD" -no-window -no-audio -no-boot-anim \
     -gpu swiftshader_indirect -no-snapshot "${ACCEL[@]}" -memory 2048 \
     > "$ROOT/build/local-emulator.log" 2>&1 &
+  disown || true
 fi
 
 echo "waiting for boot"
@@ -63,20 +64,27 @@ done
 python3 scripts/qa/make_fixtures.py --out build/qa-fixtures
 
 # The app browses storage through SAF, so the files must be in the emulated
-# primary storage. Copy through /data/media/0 so a sluggish FUSE mount cannot
-# make the push fail halfway.
+# primary storage. Copy through /data/media/0 as root: the FUSE-backed /sdcard
+# can reject shell writes while it is still settling after boot.
 "$ADB" -s "$SERIAL" push build/qa-fixtures/. /data/local/tmp/qa-fixtures/
-"$ADB" -s "$SERIAL" shell 'rm -rf /data/media/0/WaveCueFixtures
-  mkdir -p /data/media/0/WaveCueFixtures
-  cp /data/local/tmp/qa-fixtures/* /data/media/0/WaveCueFixtures/
-  chown -R media_rw:media_rw /data/media/0/WaveCueFixtures
-  chmod -R 0660 /data/media/0/WaveCueFixtures' || {
-  echo "warning: could not seed fixtures as root; trying /sdcard" >&2
-  "$ADB" -s "$SERIAL" root >/dev/null 2>&1 || true
-  "$ADB" -s "$SERIAL" wait-for-device
+if ! "$ADB" -s "$SERIAL" root >/dev/null 2>&1; then
+  echo "adb root unavailable; relying on a writable /sdcard" >&2
+fi
+"$ADB" -s "$SERIAL" wait-for-device
+for _ in $(seq 1 30); do
+  "$ADB" -s "$SERIAL" shell id | grep -q "uid=0" && break
+  sleep 2
+done
+if "$ADB" -s "$SERIAL" shell id | grep -q "uid=0"; then
+  "$ADB" -s "$SERIAL" shell 'rm -rf /data/media/0/WaveCueFixtures
+    mkdir -p /data/media/0/WaveCueFixtures
+    cp /data/local/tmp/qa-fixtures/* /data/media/0/WaveCueFixtures/
+    chown -R media_rw:media_rw /data/media/0/WaveCueFixtures
+    chmod -R 0660 /data/media/0/WaveCueFixtures'
+else
   "$ADB" -s "$SERIAL" shell mkdir -p /sdcard/WaveCueFixtures
   "$ADB" -s "$SERIAL" push build/qa-fixtures/. /sdcard/WaveCueFixtures/
-}
+fi
 
 echo "fixtures:"
 for _ in $(seq 1 60); do
