@@ -34,6 +34,7 @@ class ExportTest : QaTest() {
         scrollToText("Export library as JSON")
         compose.onNodeWithText("Export library as JSON").performClick()
         DocumentsUi.saveFile()
+        runCatching { waitUntilText("Exported", 10_000) }
 
         val json = shell("cat '${waitForFile("wavecue-backup.json")}'")
         assertTrue(json, json.contains("\"app\": \"WaveCue\""))

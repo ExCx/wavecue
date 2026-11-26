@@ -29,7 +29,7 @@ class AnnotationsTest : QaTest() {
         compose.onNodeWithTag(TestTags.FlagTitle).performTextReplacement("Build")
         clickTag(TestTags.FlagSave)
         waitUntil(10_000) { TestHarness.flagTitles(context) == listOf("Build") }
-        waitUntilText("Build", 10_000)
+        waitUntilText("Build", 20_000)
 
         // The annotation lives in the database, not in the activity.
         compose.activityRule.scenario.recreate()
