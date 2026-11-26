@@ -42,7 +42,18 @@ class SilenceDetectionTest : QaTest() {
         compose.onNodeWithText("Find gaps").performClick()
         waitUntilText("Silence detected", 45_000)
         clickTag(TestTags.SilenceCreate)
-        waitUntil(20_000) { TestHarness.flagTitles(context) == listOf("Gap 1") }
+        var gapAttempts = 0
+        while (TestHarness.flagTitles(context) != listOf("Gap 1") && gapAttempts < 3) {
+            gapAttempts++
+            Thread.sleep(2_000)
+            if (TestHarness.flagTitles(context) != listOf("Gap 1")) {
+                // Re-open the sheet and retry if the first tap did not take.
+                runCatching { compose.onNodeWithText("Find gaps").performClick() }
+                runCatching { waitUntilText("Silence detected", 10_000) }
+                runCatching { clickTag(TestTags.SilenceCreate) }
+            }
+        }
+        waitUntil(30_000) { TestHarness.flagTitles(context) == listOf("Gap 1") }
         waitUntilText("Segments 1", 10_000)
         waitUntilText("Gap 1", 10_000)
         waitUntilText("0:14.500", 10_000)

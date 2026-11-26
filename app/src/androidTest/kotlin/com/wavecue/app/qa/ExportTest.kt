@@ -46,11 +46,15 @@ class ExportTest : QaTest() {
         var path = ""
         while (System.currentTimeMillis() < deadline && path.isEmpty()) {
             path = shell("find / -type f -name 'wavecue-backup.json' 2>/dev/null | head -1").trim()
+            if (path.isEmpty()) {
+                path = shell("run-as com.wavecue.app find /data/data/com.wavecue.app -name 'wavecue-backup.json' 2>/dev/null | head -1").trim()
+            }
             Thread.sleep(500)
         }
         if (path.isEmpty()) {
             val downloadDir = shell("ls -la /sdcard/Download 2>&1 | head -40")
-            throw AssertionError("exported file 'wavecue-backup.json' not found. snackbar=$snackbar. Download dir: $downloadDir. ${DocumentsUi.describeForeground()}")
+            val allText = shell("dumpsys window windows 2>/dev/null | grep -i 'wavecue-backup\\|Exported\\|Export failed' | head")
+            throw AssertionError("exported file 'wavecue-backup.json' not found. snackbar=$snackbar. Download dir: $downloadDir. window: $allText")
         }
         val json = shell("cat '$path'")
         assertTrue(json, json.contains("\"app\": \"WaveCue\""))

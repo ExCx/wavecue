@@ -21,24 +21,15 @@ class WaveformNavigationTest : QaTest() {
         waitForWaveform()
         assertEquals("1x", textOf(TestTags.ZoomLabel))
 
+        // Zoom in to 8x while the playhead is still near the start, so the pan
+        // below has room to move the visible window later in the track.
         clickTag(TestTags.ZoomIn)
         waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }
         clickTag(TestTags.ZoomIn)
-        Thread.sleep(300)
-        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "4x" }
-        clickTag(TestTags.ZoomOut)
-        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "2x" }
+        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "4x" }
+        clickTag(TestTags.ZoomIn)
+        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "8x" }
 
-        // Panning at 8x moves the visible window later in the track.
-        // Pause and seek back to the start so the pan has room to move later.
-        clickTag(TestTags.TransportToggle)
-        waitUntil(5_000) { !TestHarness.isPlaying(context) }
-        repeat(8) { clickTag(TestTags.TransportBack5) }
-        Thread.sleep(500)
-        clickTag(TestTags.ZoomIn)
-        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "4x" }
-        clickTag(TestTags.ZoomIn)
-        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "8x" }
         val startBefore = parseTimecode(textOf(TestTags.ViewportStart))
         compose.onNodeWithTag(TestTags.PlayerWaveform).performTouchInput {
             swipe(
@@ -58,5 +49,13 @@ class WaveformNavigationTest : QaTest() {
         // Tapping the middle of a 32 s track seeks to roughly 16 s.
         compose.onNodeWithTag(TestTags.PlayerWaveform).performTouchInput { click(center) }
         waitUntil(10_000) { positionMs() in 14_500..18_000 }
+
+        // Exercise zoom-out back to 2x.
+        clickTag(TestTags.ZoomIn)
+        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }
+        clickTag(TestTags.ZoomIn)
+        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "4x" }
+        clickTag(TestTags.ZoomOut)
+        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }
     }
 }
