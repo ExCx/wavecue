@@ -53,6 +53,7 @@ class PlaybackTest : QaTest() {
 
         clickTag(TestTags.TransportForward5)
         waitUntil(10_000) { positionMs() >= 3_500 }
+
         clickTag(TestTags.TransportForward5)
         waitUntil(10_000) { positionMs() >= 8_000 }
 

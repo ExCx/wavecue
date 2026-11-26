@@ -104,12 +104,23 @@ object DocumentsUi {
         use.click()
         d.waitForIdle()
 
-        waitAny(listOf(By.text("Allow"), By.text("ALLOW"), By.res("android", "button1")), 10_000)?.click()
-        d.waitForIdle()
-        // The picker closes and the app resumes; make sure the app window is back
-        // before Compose assertions run against it.
-        val returnDeadline = System.currentTimeMillis() + 30_000
+        // The confirmation sometimes needs a second tap or an Enter keypress on
+        // slower emulators.
         var returned = false
+        val confirmDeadline = System.currentTimeMillis() + 10_000
+        while (System.currentTimeMillis() < confirmDeadline && !returned) {
+            waitAny(listOf(By.text("Allow"), By.text("ALLOW"), By.res("android", "button1")), 2_000)?.click()
+            d.waitForIdle(1_000)
+            if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
+            // Retry the confirmation tap if the picker is still open.
+            if (d.findObject(By.pkg(PICKER_PKGS[0])) != null || d.findObject(By.pkg(PICKER_PKGS[1])) != null) {
+                use.click()
+                d.waitForIdle(1_000)
+            }
+        }
+
+        // Wait for the app to fully return.
+        val returnDeadline = System.currentTimeMillis() + 30_000
         while (System.currentTimeMillis() < returnDeadline) {
             if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
             dismissSystemDialog()
@@ -137,11 +148,13 @@ object DocumentsUi {
         // d.waitForIdle()
 
         val save = waitAny(
-            listOf(
-                By.text(SAVE),
-                By.desc(SAVE),
-                By.res("android", "button1"),
-            ) + pickerResource("action_menu_select") + pickerResource("save"),
+            pickerResource("action_menu_select") +
+                pickerResource("save") +
+                listOf(
+                    By.text(SAVE),
+                    By.desc(SAVE),
+                    By.res("android", "button1"),
+                ),
             15_000,
         ) ?: throw AssertionError("'Save' is missing from the document dialog. ${describeForeground()}")
         save.click()
