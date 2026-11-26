@@ -145,7 +145,9 @@ object DocumentsUi {
             15_000,
         ) ?: throw AssertionError("'Save' is missing from the document dialog. ${describeForeground()}")
         save.click()
-        d.waitForIdle()
+        device.waitForIdle(1_000)
+        device.pressKeyCode(android.view.KeyEvent.KEYCODE_ENTER)
+        device.waitForIdle(1_000)
 
         // Handle a possible overwrite confirmation, then wait for the app to return.
         waitAny(

@@ -24,6 +24,7 @@ class WaveformNavigationTest : QaTest() {
         clickTag(TestTags.ZoomIn)
         waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }
         clickTag(TestTags.ZoomIn)
+        Thread.sleep(300)
         waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "4x" }
         clickTag(TestTags.ZoomOut)
         waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }

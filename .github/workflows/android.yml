@@ -89,7 +89,8 @@ jobs:
             sleep 60
             adb shell mkdir -p /sdcard/WaveCueFixtures
             adb push build/qa-fixtures/. /sdcard/WaveCueFixtures/
-            rm -rf app/build .gradle ~/.gradle/caches/build-cache-1
+            rm -rf app/build .gradle
+            rm -rf ~/.gradle/caches/build-cache-1 ~/.gradle/caches/configuration-cache
             ./gradlew connectedDebugAndroidTest --stacktrace --console=plain --rerun-tasks --no-build-cache --no-configuration-cache -Dorg.gradle.caching=false -Dorg.gradle.configuration-cache=false -Dorg.gradle.daemon=false --max-workers=1 > build/connected.log 2>&1
             status=$?
             tail -120 build/connected.log
