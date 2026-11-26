@@ -169,14 +169,12 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             _detecting.value = true
             val values = settings.value
-            _pendingSilence.value = withContext(Dispatchers.Default) {
-                SilenceDetector.detect(
-                    waveform = waveform,
-                    thresholdDb = values.silenceThresholdDb,
-                    minDurationMs = values.silenceMinDurationMs,
-                    includeEdges = values.includeEdgeSilence,
-                )
-            }
+            _pendingSilence.value = SilenceDetector.detect(
+                waveform = waveform,
+                thresholdDb = values.silenceThresholdDb,
+                minDurationMs = values.silenceMinDurationMs,
+                includeEdges = values.includeEdgeSilence,
+            )
             _detecting.value = false
         }
     }
