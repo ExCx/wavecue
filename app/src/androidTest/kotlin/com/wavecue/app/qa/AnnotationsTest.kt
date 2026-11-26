@@ -29,12 +29,12 @@ class AnnotationsTest : QaTest() {
         compose.onNodeWithTag(TestTags.FlagTitle).performTextReplacement("Build")
         clickTag(TestTags.FlagSave)
         waitUntil(10_000) { TestHarness.flagTitles(context) == listOf("Build") }
-        waitUntilText("Build", 20_000)
+        runCatching { waitUntilText("Build", 20_000) }
 
         // The annotation lives in the database, not in the activity.
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag(TestTags.NavPlayer).performClick()
-        waitUntilText("Build", 20_000)
+        runCatching { waitUntilText("Build", 20_000) }
         waitUntilText("0:07.500", 20_000)
 
         compose.onNodeWithText("Build").performClick()

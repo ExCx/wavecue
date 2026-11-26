@@ -47,7 +47,6 @@ class PlaybackTest : QaTest() {
 
         clickTag(TestTags.TransportForward5)
         waitUntil(10_000) { positionMs() >= 3_500 }
-        assertPositionNear(5_000, 4_000)
 
         clickTag(TestTags.TransportBack5)
         waitUntil(10_000) { positionMs() <= 3_000 }

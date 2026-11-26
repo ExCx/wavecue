@@ -131,8 +131,10 @@ object DocumentsUi {
 
         // Prefer Downloads when the dialog offers it, so the test knows where
         // to look for the file afterwards.
-        d.findObject(By.text("Downloads"))?.click()
-        d.waitForIdle()
+        // (Skipped: clicking the sidebar entry can navigate away from the
+        //  CreateDocument dialog on some DocumentsUI builds.)
+        // d.findObject(By.text("Downloads"))?.click()
+        // d.waitForIdle()
 
         val save = waitAny(
             listOf(
