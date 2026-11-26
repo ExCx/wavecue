@@ -142,10 +142,11 @@ whole sequence (boot, unlock, wait for the FUSE `/sdcard`, seed fixtures, run th
 SLOW=1 ./scripts/qa/run_local_emulator.sh   # or omit SLOW when /dev/kvm works
 ```
 
-The script seeds storage through `/data/media/0` because a software-emulated device can
-take minutes before `/sdcard` is usable. Audio fidelity itself cannot be judged from an
-emulator without USB hardware, so the instrumented suite asserts UI state, timing,
-media-session state and logcat health.
+The script waits for the primary user to unlock and for the FUSE `/sdcard` mount to be
+listable before pushing fixtures, because a software-emulated device can take minutes
+to reach that point. Audio fidelity itself cannot be judged from an emulator without
+USB hardware, so the instrumented suite asserts UI state, timing, media-session state
+and logcat health.
 
 ### Exploratory adb harness
 

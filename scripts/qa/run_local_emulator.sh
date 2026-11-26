@@ -64,27 +64,13 @@ done
 python3 scripts/qa/make_fixtures.py --out build/qa-fixtures
 
 # The app browses storage through SAF, so the files must be in the emulated
-# primary storage. Copy through /data/media/0 as root: the FUSE-backed /sdcard
-# can reject shell writes while it is still settling after boot.
-"$ADB" -s "$SERIAL" push build/qa-fixtures/. /data/local/tmp/qa-fixtures/
-if ! "$ADB" -s "$SERIAL" root >/dev/null 2>&1; then
-  echo "adb root unavailable; relying on a writable /sdcard" >&2
-fi
-"$ADB" -s "$SERIAL" wait-for-device
-for _ in $(seq 1 30); do
-  "$ADB" -s "$SERIAL" shell id | grep -q "uid=0" && break
-  sleep 2
-done
-if "$ADB" -s "$SERIAL" shell id | grep -q "uid=0"; then
-  "$ADB" -s "$SERIAL" shell 'rm -rf /data/media/0/WaveCueFixtures
-    mkdir -p /data/media/0/WaveCueFixtures
-    cp /data/local/tmp/qa-fixtures/* /data/media/0/WaveCueFixtures/
-    chown -R media_rw:media_rw /data/media/0/WaveCueFixtures
-    chmod -R 0660 /data/media/0/WaveCueFixtures'
-else
-  "$ADB" -s "$SERIAL" shell mkdir -p /sdcard/WaveCueFixtures
-  "$ADB" -s "$SERIAL" push build/qa-fixtures/. /sdcard/WaveCueFixtures/
-fi
+# primary storage. Seeding /data/media/0 directly does not work: the FUSE
+# daemon caches directory entries and will not show files created behind it.
+"$ADB" -s "$SERIAL" shell mkdir -p /sdcard/WaveCueFixtures
+"$ADB" -s "$SERIAL" push build/qa-fixtures/. /sdcard/WaveCueFixtures/ || {
+  echo "could not write fixtures to /sdcard; is the storage mount healthy?" >&2
+  exit 1
+}
 
 echo "fixtures:"
 for _ in $(seq 1 60); do
