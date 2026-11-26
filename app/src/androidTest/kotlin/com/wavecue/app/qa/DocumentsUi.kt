@@ -16,15 +16,33 @@ import androidx.test.uiautomator.Until
  */
 object DocumentsUi {
 
-    private const val PKG = "com.android.documentsui"
+    // AOSP images ship com.android.documentsui; the google_apis image used by
+    // CI and by the local AVD ships Google's Files build instead.
+    private val PICKER_PKGS = listOf(
+        "com.google.android.documentsui",
+        "com.android.documentsui",
+    )
     private const val TARGET_PKG = "com.wavecue.app"
 
     private val device: UiDevice
         get() = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
+    private fun pickerVisible(timeoutMs: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (PICKER_PKGS.any { device.findObject(By.pkg(it)) != null }) return true
+            Thread.sleep(200)
+        }
+        return false
+    }
+
+    private fun pickerResource(id: String): List<BySelector> = PICKER_PKGS.map { By.res(it, id) }
+
     fun pickFolder(name: String, timeoutMs: Long = 30_000) {
         val d = device
-        check(d.wait(Until.hasObject(By.pkg(PKG)), timeoutMs)) { "the folder picker did not open" }
+        check(pickerVisible(timeoutMs)) {
+            "the folder picker did not open (looked for ${PICKER_PKGS.joinToString()})"
+        }
         d.waitForIdle()
 
         openDrawerIfPresent()
@@ -39,9 +57,8 @@ object DocumentsUi {
         val use = waitAny(
             listOf(
                 By.textContains("Use this folder"),
-                By.res(PKG, "action_menu_select"),
                 By.descContains("Use this folder"),
-            ),
+            ) + pickerResource("action_menu_select"),
             15_000,
         ) ?: throw AssertionError("'Use this folder' is missing")
         use.click()
@@ -58,7 +75,9 @@ object DocumentsUi {
     /** Accepts the current CreateDocument dialog using its prefilled name. */
     fun saveFile(timeoutMs: Long = 30_000) {
         val d = device
-        check(d.wait(Until.hasObject(By.pkg(PKG)), timeoutMs)) { "the save dialog did not open" }
+        check(pickerVisible(timeoutMs)) {
+            "the save dialog did not open (looked for ${PICKER_PKGS.joinToString()})"
+        }
         d.waitForIdle()
 
         // Prefer Downloads when the dialog offers it, so the test knows where
@@ -69,9 +88,9 @@ object DocumentsUi {
         val save = waitAny(
             listOf(
                 By.text("Save"),
-                By.res(PKG, "action_menu_select"),
+                By.textContains("Save"),
                 By.res("android", "button1"),
-            ),
+            ) + pickerResource("action_menu_select"),
             15_000,
         ) ?: throw AssertionError("'Save' is missing from the document dialog")
         save.click()
