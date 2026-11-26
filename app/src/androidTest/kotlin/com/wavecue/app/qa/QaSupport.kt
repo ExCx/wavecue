@@ -205,7 +205,14 @@ abstract class QaTest {
         }
         check(opened) { "the folder picker never opened; ${DocumentsUi.describeForeground()}" }
         DocumentsUi.pickFolder(FIXTURE_FOLDER)
-        compose.waitUntil(60_000) { TestHarness.rootUris(context).isNotEmpty() }
+        try {
+            compose.waitUntil(60_000) { TestHarness.rootUris(context).isNotEmpty() }
+        } catch (t: Throwable) {
+            throw AssertionError(
+                "folder grant did not reach the database. Visible: ${visibleTexts()}",
+                t,
+            )
+        }
         waitUntilText(FIXTURE_FOLDER, 20_000)
     }
 
@@ -227,9 +234,9 @@ abstract class QaTest {
         // The browser header only exists inside a root; on the roots list the
         // fixture row opens it.
         val insideRoot = compose
-            .onAllNodesWithContentDescription("Folder options")
+            .onAllNodesWithContentDescription("Add folder")
             .fetchSemanticsNodes()
-            .isNotEmpty()
+            .isEmpty()
         if (!insideRoot) {
             compose.onNodeWithText(FIXTURE_FOLDER).performClick()
         }

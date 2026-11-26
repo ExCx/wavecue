@@ -108,8 +108,11 @@ object DocumentsUi {
         d.waitForIdle()
         // The picker closes and the app resumes; make sure the app window is back
         // before Compose assertions run against it.
-        d.wait(Until.hasObject(By.pkg(TARGET_PKG)), 15_000)
+        val returned = d.wait(Until.hasObject(By.pkg(TARGET_PKG)), 15_000)
         d.waitForIdle()
+        if (!returned) {
+            throw AssertionError("picker did not return to the app. ${describeForeground()}")
+        }
     }
 
     /** Accepts the current CreateDocument dialog using its prefilled name. */
