@@ -134,10 +134,18 @@ adb push build/qa-fixtures/. /sdcard/WaveCueFixtures/
 ./gradlew connectedDebugAndroidTest
 ```
 
-An emulator needs `/dev/kvm`. On this workstation the build user is not in the `kvm`
-group, so the suite is wired for CI (see below) instead of a local run. Annex: audio
-fidelity itself cannot be judged from an emulator without USB hardware, so the
-instrumented suite asserts UI state, timing, media-session state and logcat health.
+An emulator needs `/dev/kvm`. On machines where the build user is not in the `kvm`
+group, `scripts/qa/run_local_emulator.sh` falls back to software emulation and does the
+whole sequence (boot, unlock, wait for the FUSE `/sdcard`, seed fixtures, run the suite):
+
+```bash
+SLOW=1 ./scripts/qa/run_local_emulator.sh   # or omit SLOW when /dev/kvm works
+```
+
+The script seeds storage through `/data/media/0` because a software-emulated device can
+take minutes before `/sdcard` is usable. Audio fidelity itself cannot be judged from an
+emulator without USB hardware, so the instrumented suite asserts UI state, timing,
+media-session state and logcat health.
 
 ### Exploratory adb harness
 
@@ -161,8 +169,11 @@ python3 scripts/qa/wavecue_qa.py shot library          # build/qa-evidence/<run>
 
 `.github/workflows/android.yml` has two jobs. The build job assembles the debug APK,
 runs all JVM tests and lint. The instrumented job boots an API 34 `google_apis` x86_64
-emulator with the standard KVM udev rule, pushes the generated fixtures and runs
-`connectedDebugAndroidTest`, then uploads the test reports and APK artifacts.
+emulator with the standard KVM udev rule, waits for the FUSE-backed `/sdcard`,
+pushes the generated fixtures and runs `connectedDebugAndroidTest`, then uploads the
+test reports and APK artifacts. `scripts/qa/summarize_results.py` turns each failed
+JUnit case into a GitHub check annotation, so a red run can be diagnosed from the
+checks API without downloading the report or the raw job log.
 
 ## Known limitations
 
