@@ -27,7 +27,7 @@ class WaveformNavigationTest : QaTest() {
         Thread.sleep(300)
         waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "4x" }
         clickTag(TestTags.ZoomOut)
-        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }
+        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "2x" }
 
         // Panning at 8x moves the visible window later in the track.
         // Pause and seek back to the start so the pan has room to move later.

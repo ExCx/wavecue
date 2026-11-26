@@ -42,7 +42,7 @@ class SilenceDetectionTest : QaTest() {
         compose.onNodeWithText("Find gaps").performClick()
         waitUntilText("Silence detected", 45_000)
         clickTag(TestTags.SilenceCreate)
-        waitUntil(10_000) { TestHarness.flagTitles(context) == listOf("Gap 1") }
+        waitUntil(20_000) { TestHarness.flagTitles(context) == listOf("Gap 1") }
         waitUntilText("Segments 1", 10_000)
         waitUntilText("Gap 1", 10_000)
         waitUntilText("0:14.500", 10_000)

@@ -123,6 +123,11 @@ object DocumentsUi {
         val returnDeadline = System.currentTimeMillis() + 30_000
         while (System.currentTimeMillis() < returnDeadline) {
             if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
+            // Retry the confirmation if the picker is still on screen.
+            if (d.findObject(By.pkg(PICKER_PKGS[0])) != null || d.findObject(By.pkg(PICKER_PKGS[1])) != null) {
+                use.click()
+                d.waitForIdle(1_000)
+            }
             dismissSystemDialog()
             Thread.sleep(500)
         }
@@ -157,8 +162,13 @@ object DocumentsUi {
                 ),
             15_000,
         ) ?: throw AssertionError("'Save' is missing from the document dialog. ${describeForeground()}")
-        save.click()
-        device.waitForIdle(1_000)
+        // Try pressing Enter to commit, then click Save if still present.
+        device.pressKeyCode(android.view.KeyEvent.KEYCODE_ENTER)
+        device.waitForIdle(2_000)
+        if (device.findObject(By.pkg(TARGET_PKG)) == null) {
+            save.click()
+            device.waitForIdle(2_000)
+        }
 
         // Handle a possible overwrite confirmation, then wait for the app to return.
         waitAny(
