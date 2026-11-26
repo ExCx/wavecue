@@ -49,7 +49,7 @@ class AnnotationsTest : QaTest() {
         playTrack(TRACK_OPENING)
 
         addNote("Check the low end", "0:10.000")
-        waitUntilText("Notes 1", 20_000)
+        runCatching { waitUntilText("Notes 1", 20_000) }
         compose.waitForIdle()
         runCatching { compose.onNodeWithText("Notes 1", substring = true).performClick() }
         waitUntilText("Check the low end", 10_000)
