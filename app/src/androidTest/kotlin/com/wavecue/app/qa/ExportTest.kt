@@ -38,8 +38,8 @@ class ExportTest : QaTest() {
             waitUntilText("Exported", 10_000)
             "Exported"
         }.getOrElse {
-            runCatching { waitUntilText("Export failed", 5_000) }.getOrNull()
-            "no Exported snackbar"
+            val failed = runCatching { waitUntilText("Export failed", 5_000) }.isSuccess
+            if (failed) "Export failed" else "no snackbar"
         }
 
         val deadline = System.currentTimeMillis() + 60_000

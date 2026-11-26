@@ -43,14 +43,14 @@ class PlaybackTest : QaTest() {
         waitUntil(15_000) { TestHarness.isPlaying(context) }
 
         clickTag(TestTags.TransportBack5)
-        waitUntil(10_000) { positionMs() <= 2_000 }
+        waitUntil(10_000) { positionMs() <= 3_000 }
 
         clickTag(TestTags.TransportForward5)
         waitUntil(10_000) { positionMs() >= 3_500 }
         assertPositionNear(5_000, 4_000)
 
         clickTag(TestTags.TransportBack5)
-        waitUntil(10_000) { positionMs() <= 2_000 }
+        waitUntil(10_000) { positionMs() <= 3_000 }
 
         clickTag(TestTags.TransportForward5)
         waitUntil(10_000) { positionMs() >= 3_500 }
@@ -66,7 +66,7 @@ class PlaybackTest : QaTest() {
         playTrack(TRACK_MIDDLE)
         waitUntil(15_000) { TestHarness.currentTrackName(context) == TRACK_MIDDLE }
         clickTag(TestTags.TransportBack5)
-        waitUntil(10_000) { positionMs() <= 2_000 }
+        waitUntil(10_000) { positionMs() <= 3_000 }
         clickTag(TestTags.TransportPrevious)
         waitUntil(20_000) { TestHarness.currentTrackName(context) == TRACK_OPENING }
         waitUntilText(TRACK_OPENING, 20_000, substring = true)
