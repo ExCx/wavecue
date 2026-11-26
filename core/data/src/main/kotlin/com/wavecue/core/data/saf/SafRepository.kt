@@ -138,7 +138,9 @@ class SafRepository @Inject constructor(
         private val audioExtensions = setOf("wav", "wave", "bwf", "mp3")
 
         fun isAudio(name: String, mimeType: String): Boolean {
-            if (audioExtensions.contains(name.substringAfterLast('.', "").lowercase())) return true
+            val ext = if ('.' in name) name.substringAfterLast('.').lowercase() else ""
+            if (ext in audioExtensions) return true
+            if (ext.isNotEmpty()) return false
             return mimeType == "audio/mpeg" || mimeType == "audio/wav" || mimeType == "audio/x-wav" ||
                 mimeType == "audio/wave"
         }

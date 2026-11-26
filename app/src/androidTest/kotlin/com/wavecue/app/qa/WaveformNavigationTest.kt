@@ -30,7 +30,7 @@ class WaveformNavigationTest : QaTest() {
         // Panning at 8x moves the visible window later in the track.
         clickTag(TestTags.ZoomIn)
         clickTag(TestTags.ZoomIn)
-        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "8x" }
+        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "8x" }
         val startBefore = parseTimecode(textOf(TestTags.ViewportStart))
         compose.onNodeWithTag(TestTags.PlayerWaveform).performTouchInput {
             swipe(

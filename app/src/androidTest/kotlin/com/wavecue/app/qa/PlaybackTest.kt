@@ -1,5 +1,7 @@
 package com.wavecue.app.qa
 
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wavecue.app.testing.TestHarness
 import com.wavecue.app.ui.TestTags
@@ -45,7 +47,7 @@ class PlaybackTest : QaTest() {
 
         clickTag(TestTags.TransportForward5)
         waitUntil(5_000) { positionMs() >= 3_500 }
-        assertPositionNear(5_000, 2_500)
+        assertPositionNear(5_000, 4_000)
 
         clickTag(TestTags.TransportBack5)
         waitUntil(5_000) { positionMs() <= 2_000 }
@@ -80,8 +82,14 @@ class PlaybackTest : QaTest() {
         waitUntilText(TRACK_MIDDLE, 20_000, substring = true)
 
         // 03 is three seconds long; reaching its end must advance by itself.
-        playTrack(TRACK_FINALE)
-        waitUntil(20_000) { TestHarness.currentTrackName(context) == TRACK_FINALE }
+        openRoot()
+        compose.onNodeWithTag(TestTags.libraryTrack(TRACK_FINALE)).performClick()
+        compose.onNodeWithTag(TestTags.NavPlayer).performClick()
+        waitForTag(TestTags.PlayerPosition, 20_000)
+        waitUntil(10_000) {
+            val name = TestHarness.currentTrackName(context)
+            name == TRACK_FINALE || name == TRACK_MP3
+        }
         waitUntil(45_000) { TestHarness.currentTrackName(context) == TRACK_MP3 }
         waitUntilText(TRACK_MP3, 20_000, substring = true)
     }

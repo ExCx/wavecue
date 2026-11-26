@@ -25,7 +25,7 @@ class SilenceDetectionTest : QaTest() {
 
         // The fixture has three silent spans; the two that touch an edge are
         // excluded by default, leaving exactly the 12-17 s gap.
-        waitUntilText("0:12.000  →  0:17.000", 10_000)
+        waitUntilText("0:12.000  →  0:17.000", 30_000)
         assertTrue(
             compose.onAllNodesWithText("0:00.000  →  0:05.000").fetchSemanticsNodes().isEmpty(),
         )

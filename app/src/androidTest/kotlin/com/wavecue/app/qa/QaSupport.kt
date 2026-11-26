@@ -133,6 +133,7 @@ abstract class QaTest {
 
     protected fun clickTag(tag: String) {
         compose.onNodeWithTag(tag).performClick()
+        compose.waitForIdle()
     }
 
     protected fun clickText(text: String) {
