@@ -5,6 +5,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.wavecue.app.testing.TestHarness
 import com.wavecue.app.ui.TestTags
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -28,8 +29,10 @@ class WaveformNavigationTest : QaTest() {
         waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }
 
         // Panning at 8x moves the visible window later in the track.
-        // Seek back to the start so the pan has room to move later.
-        repeat(6) { clickTag(TestTags.TransportBack5) }
+        // Pause and seek back to the start so the pan has room to move later.
+        clickTag(TestTags.TransportToggle)
+        waitUntil(5_000) { !TestHarness.isPlaying(context) }
+        repeat(8) { clickTag(TestTags.TransportBack5) }
         Thread.sleep(500)
         clickTag(TestTags.ZoomIn)
         waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "4x" }

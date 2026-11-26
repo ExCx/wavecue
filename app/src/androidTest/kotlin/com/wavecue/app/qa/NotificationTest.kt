@@ -36,13 +36,21 @@ class NotificationTest : QaTest() {
             waitForMediaState(paused = true, timeoutMs = 10_000),
         )
 
-        shell("am start-foreground-service -n com.wavecue.app/.playback.PlaybackService -a com.wavecue.app.ACTION_PLAY")
+        // Resume via the notification's play action, which routes through the
+        // same media session callback as a hardware key.
+        device.openNotification()
+        runCatching { device.findObject(By.desc("Play"))?.click() }
+        device.waitForIdle(2_000)
+        device.pressBack()
         var playAttempts = 0
         while (!TestHarness.isPlaying(context) && playAttempts < 5) {
             playAttempts++
             Thread.sleep(1_000)
             if (!TestHarness.isPlaying(context)) {
-                shell("am start-foreground-service -n com.wavecue.app/.playback.PlaybackService -a com.wavecue.app.ACTION_PLAY")
+                device.openNotification()
+                runCatching { device.findObject(By.desc("Play"))?.click() }
+                device.waitForIdle(2_000)
+                device.pressBack()
             }
         }
         waitUntil(15_000) { TestHarness.isPlaying(context) }

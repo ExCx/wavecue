@@ -145,11 +145,13 @@ object DocumentsUi {
         save.click()
         d.waitForIdle()
 
+        // Handle a possible overwrite confirmation, then wait for the app to return.
         waitAny(
             listOf(By.textContains("Replace"), By.textContains("Overwrite"), By.text("OK")),
             3_000,
         )?.click()
         d.waitForIdle()
+
         val returnDeadline = System.currentTimeMillis() + 30_000
         var returned = false
         while (System.currentTimeMillis() < returnDeadline) {
@@ -158,6 +160,18 @@ object DocumentsUi {
             Thread.sleep(500)
         }
         d.waitForIdle(2_000)
+        if (!returned) {
+            // Retry the save tap once on slow emulators.
+            save.click()
+            d.waitForIdle()
+            val d2 = System.currentTimeMillis() + 15_000
+            while (System.currentTimeMillis() < d2 && !returned) {
+                if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
+                dismissSystemDialog()
+                Thread.sleep(500)
+            }
+            d.waitForIdle(2_000)
+        }
         if (!returned) {
             throw AssertionError("save dialog did not return to the app. ${describeForeground()}")
         }
