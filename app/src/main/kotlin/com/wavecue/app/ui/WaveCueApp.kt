@@ -225,7 +225,7 @@ private fun NowPlayingBar(
                             subtitle,
                             style = MaterialTheme.typography.labelSmall,
                             color = WaveCueColors.TextSecondary,
-                            maxLines = 0,
+                            maxLines = 1,
                         )
                     }
                 }

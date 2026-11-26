@@ -32,9 +32,12 @@ class LibraryBrowserTest : QaTest() {
         }
 
         // Everything that is not WAV/MP3 is filtered before it reaches the list.
-        assertTrue(compose.onAllNodesWithText("readme.txt").fetchSemanticsNodes().isEmpty())
-        assertTrue(compose.onAllNodesWithText("artwork.jpg").fetchSemanticsNodes().isEmpty())
-        assertTrue(compose.onAllNodesWithText("05 Not Supported.m4a").fetchSemanticsNodes().isEmpty())
+        assertTrue("readme.txt was listed (" + compose.onAllNodesWithText("readme.txt").fetchSemanticsNodes().size + ")",
+            compose.onAllNodesWithText("readme.txt").fetchSemanticsNodes().isEmpty())
+        assertTrue("artwork.jpg was listed (" + compose.onAllNodesWithText("artwork.jpg").fetchSemanticsNodes().size + ")",
+            compose.onAllNodesWithText("artwork.jpg").fetchSemanticsNodes().isEmpty())
+        assertTrue("05 Not Supported.m4a was listed (" + compose.onAllNodesWithText("05 Not Supported.m4a").fetchSemanticsNodes().size + ")",
+            compose.onAllNodesWithText("05 Not Supported.m4a").fetchSemanticsNodes().isEmpty())
 
         // Natural order, independent of the order the provider returned.
         assertVerticalOrder(TRACK_OPENING, TRACK_MIDDLE, TRACK_FINALE, TRACK_MP3)
