@@ -76,9 +76,18 @@ jobs:
             -camera-back none -camera-front none
           script: |
             adb wait-for-device
+            # The FUSE-backed /sdcard mounts a little after boot on slower runners.
+            adb shell 'n=0; until [ -d /sdcard/Download ] || [ $n -ge 120 ]; do n=$((n+1)); sleep 1; done'
             adb shell mkdir -p /sdcard/WaveCueFixtures
             adb push build/qa-fixtures/. /sdcard/WaveCueFixtures/
-            ./gradlew connectedDebugAndroidTest --stacktrace --console=plain
+            ./gradlew connectedDebugAndroidTest --stacktrace --console=plain > build/connected.log 2>&1
+            status=$?
+            tail -120 build/connected.log
+            exit $status
+
+      - name: Report instrumented failures
+        if: always()
+        run: python3 scripts/qa/summarize_results.py
 
       - name: Upload test reports
         if: always()
