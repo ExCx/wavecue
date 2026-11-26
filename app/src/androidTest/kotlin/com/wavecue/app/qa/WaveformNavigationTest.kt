@@ -32,6 +32,7 @@ class WaveformNavigationTest : QaTest() {
         repeat(6) { clickTag(TestTags.TransportBack5) }
         Thread.sleep(500)
         clickTag(TestTags.ZoomIn)
+        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "4x" }
         clickTag(TestTags.ZoomIn)
         waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "8x" }
         val startBefore = parseTimecode(textOf(TestTags.ViewportStart))

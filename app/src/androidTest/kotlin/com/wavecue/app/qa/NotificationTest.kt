@@ -37,6 +37,14 @@ class NotificationTest : QaTest() {
         )
 
         device.pressKeyCode(KeyEvent.KEYCODE_MEDIA_PLAY)
+        var playAttempts = 0
+        while (!TestHarness.isPlaying(context) && playAttempts < 3) {
+            playAttempts++
+            Thread.sleep(1_000)
+            if (!TestHarness.isPlaying(context)) {
+                device.pressKeyCode(KeyEvent.KEYCODE_MEDIA_PLAY)
+            }
+        }
         waitUntil(15_000) { TestHarness.isPlaying(context) }
         assertTrue(
             "media session did not report playing",

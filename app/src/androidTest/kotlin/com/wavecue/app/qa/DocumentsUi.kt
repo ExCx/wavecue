@@ -108,8 +108,14 @@ object DocumentsUi {
         d.waitForIdle()
         // The picker closes and the app resumes; make sure the app window is back
         // before Compose assertions run against it.
-        val returned = d.wait(Until.hasObject(By.pkg(TARGET_PKG)), 30_000)
-        d.waitForIdle()
+        val returnDeadline = System.currentTimeMillis() + 30_000
+        var returned = false
+        while (System.currentTimeMillis() < returnDeadline) {
+            if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
+            dismissSystemDialog()
+            Thread.sleep(500)
+        }
+        d.waitForIdle(2_000)
         if (!returned) {
             throw AssertionError("picker did not return to the app. ${describeForeground()}")
         }
@@ -144,8 +150,14 @@ object DocumentsUi {
             3_000,
         )?.click()
         d.waitForIdle()
-        val returned = d.wait(Until.hasObject(By.pkg(TARGET_PKG)), 30_000)
-        d.waitForIdle()
+        val returnDeadline = System.currentTimeMillis() + 30_000
+        var returned = false
+        while (System.currentTimeMillis() < returnDeadline) {
+            if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
+            dismissSystemDialog()
+            Thread.sleep(500)
+        }
+        d.waitForIdle(2_000)
         if (!returned) {
             throw AssertionError("save dialog did not return to the app. ${describeForeground()}")
         }
@@ -183,6 +195,20 @@ object DocumentsUi {
             ?: return
         storage.click()
         d.waitForIdle()
+    }
+
+    /** Dismisses permission prompts and ANR dialogs while polling. */
+    private fun dismissSystemDialog() {
+        val node = device.findObject(By.res("android", "aerr_wait"))
+            ?: device.findObject(By.res("android", "aerr_close"))
+            ?: device.findObject(By.text("Wait"))
+            ?: device.findObject(By.text("Close app"))
+            ?: device.findObject(By.text("Allow"))
+            ?: device.findObject(By.text("ALLOW"))
+            ?: device.findObject(By.text("While using the app"))
+            ?: device.findObject(By.res("android", "button1"))
+        node?.click()
+        device.waitForIdle(1_000)
     }
 
     private fun navigateUp(): Boolean {

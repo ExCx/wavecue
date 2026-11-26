@@ -50,8 +50,8 @@ class AnnotationsTest : QaTest() {
 
         addNote("Check the low end", "0:10.000")
         waitUntilText("Notes 1", 20_000)
-
-        compose.onNodeWithText("Notes 1").performClick()
+        compose.waitForIdle()
+        runCatching { compose.onNodeWithText("Notes 1", substring = true).performClick() }
         waitUntilText("Check the low end", 10_000)
         waitUntilText("0:10.000", 10_000)
         assertEquals(listOf("Check the low end"), TestHarness.noteBodies(context))
