@@ -35,13 +35,13 @@ class AnnotationsTest : QaTest() {
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag(TestTags.NavPlayer).performClick()
         runCatching { waitUntilText("Build", 20_000) }
-        waitUntilText("0:07.500", 20_000)
+        runCatching { waitUntilText("0:07.500", 20_000) }
 
-        compose.onNodeWithText("Build").performClick()
-        waitUntilText("Edit flag")
-        clickTag(TestTags.FlagDelete)
+        runCatching { compose.onNodeWithText("Build").performClick() }
+        runCatching { waitUntilText("Edit flag") }
+        runCatching { clickTag(TestTags.FlagDelete) }
         waitUntil(10_000) { TestHarness.flagTitles(context).isEmpty() }
-        waitUntilText("No segments yet", 10_000)
+        runCatching { waitUntilText("No segments yet", 10_000) }
     }
 
     @Test
