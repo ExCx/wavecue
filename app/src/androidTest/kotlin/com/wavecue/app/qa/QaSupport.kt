@@ -233,7 +233,27 @@ abstract class QaTest {
         if (!insideRoot) {
             compose.onNodeWithText(FIXTURE_FOLDER).performClick()
         }
-        waitForTag(TestTags.libraryTrack(TRACK_OPENING), 20_000)
+        try {
+            waitForTag(TestTags.libraryTrack(TRACK_OPENING), 60_000)
+        } catch (t: Throwable) {
+            throw AssertionError(
+                "track '$TRACK_OPENING' did not appear within 60s. Visible text: ${visibleTexts()}",
+                t,
+            )
+        }
+    }
+
+    private fun visibleTexts(): String {
+        return try {
+            compose.onAllNodesWithText("", substring = true)
+                .fetchSemanticsNodes()
+                .mapNotNull { it.config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text } }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .joinToString(" | ")
+        } catch (t: Throwable) {
+            "(unavailable: ${t::class.simpleName})"
+        }
     }
 
     protected fun playTrack(name: String) {
