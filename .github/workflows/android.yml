@@ -89,7 +89,8 @@ jobs:
             sleep 60
             adb shell mkdir -p /sdcard/WaveCueFixtures
             adb push build/qa-fixtures/. /sdcard/WaveCueFixtures/
-            ./gradlew connectedDebugAndroidTest --stacktrace --console=plain --max-workers=1 > build/connected.log 2>&1
+            rm -rf app/build/outputs/androidTest-results app/build/outputs/apk/androidTest
+            ./gradlew connectedDebugAndroidTest --stacktrace --console=plain --no-build-cache --max-workers=1 > build/connected.log 2>&1
             status=$?
             tail -120 build/connected.log
             exit $status

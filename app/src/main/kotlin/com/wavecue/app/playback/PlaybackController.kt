@@ -185,10 +185,9 @@ class PlaybackController @Inject constructor(
     }
 
     fun play() {
-        if (requestFocus()) {
-            if (engine.state.value == PlaybackState.ENDED) engine.seekTo(0)
-            engine.play()
-        }
+        if (engine.state.value == PlaybackState.ENDED) engine.seekTo(0)
+        requestFocus()
+        engine.play()
     }
 
     fun pause() {

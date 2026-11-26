@@ -60,7 +60,7 @@ class ExportTest : QaTest() {
     private fun waitForFile(name: String, timeoutMs: Long = 60_000): String {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
-            val path = shell("find /sdcard -type f -name '$name' 2>/dev/null | head -1").trim()
+            val path = shell("find / -type f -name '$name' 2>/dev/null | head -1").trim()
             if (path.isNotEmpty()) return path
             Thread.sleep(500)
         }
