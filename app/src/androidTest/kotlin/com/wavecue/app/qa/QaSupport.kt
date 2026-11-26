@@ -2,7 +2,6 @@ package com.wavecue.app.qa
 
 import android.Manifest
 import android.content.Context
-import android.os.Build
 import android.os.ParcelFileDescriptor
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -20,6 +19,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import com.wavecue.app.MainActivity
@@ -51,14 +51,6 @@ class TestStateRule : TestRule {
         object : Statement() {
             override fun evaluate() {
                 val instrumentation = InstrumentationRegistry.getInstrumentation()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    runCatching {
-                        instrumentation.uiAutomation.grantRuntimePermission(
-                            instrumentation.targetContext.packageName,
-                            Manifest.permission.POST_NOTIFICATIONS,
-                        )
-                    }
-                }
                 TestHarness.reset(instrumentation.targetContext)
                 try {
                     base.evaluate()
@@ -73,8 +65,19 @@ abstract class QaTest {
 
     val compose = createAndroidComposeRule<MainActivity>()
 
+    /**
+     * Grants POST_NOTIFICATIONS before the activity launches. Without this the
+     * app's own permission prompt can appear a moment after the test starts and
+     * swallow taps meant for the library.
+     */
+    private val notificationPermission: TestRule =
+        GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
+
     @get:Rule
-    val rules: RuleChain = RuleChain.outerRule(TestStateRule()).around(compose)
+    val rules: RuleChain = RuleChain
+        .outerRule(TestStateRule())
+        .around(notificationPermission)
+        .around(compose)
 
     protected val instrumentation get() = InstrumentationRegistry.getInstrumentation()
     protected val context: Context get() = instrumentation.targetContext
@@ -84,6 +87,10 @@ abstract class QaTest {
     fun startFromLibrary() {
         dismissSystemDialog()
         compose.waitForIdle()
+        // The startup permission prompt is launched from a LaunchedEffect, so it
+        // can land just after the activity resumes.
+        Thread.sleep(400)
+        dismissSystemDialog()
         compose.onNodeWithTag(TestTags.NavLibrary).performClick()
     }
 
@@ -146,7 +153,19 @@ abstract class QaTest {
     protected fun ensureFolderConfigured() {
         if (TestHarness.rootUris(context).isNotEmpty()) return
         compose.onNodeWithTag(TestTags.NavLibrary).performClick()
-        compose.onNodeWithText("Choose a folder").performClick()
+        dismissSystemDialog()
+        var opened = false
+        var attempts = 0
+        while (!opened && attempts < 2) {
+            attempts++
+            compose.onNodeWithText("Choose a folder").performClick()
+            opened = DocumentsUi.isPickerOpen(20_000)
+            if (!opened) {
+                // A system dialog may have taken the first tap. Dismiss and retry.
+                dismissSystemDialog()
+            }
+        }
+        check(opened) { "the folder picker never opened; ${DocumentsUi.describeForeground()}" }
         DocumentsUi.pickFolder(FIXTURE_FOLDER)
         compose.waitUntil(60_000) { TestHarness.rootUris(context).isNotEmpty() }
         waitUntilText(FIXTURE_FOLDER, 20_000)
@@ -232,7 +251,12 @@ abstract class QaTest {
 
     protected fun dismissSystemDialog() {
         val allow = device.findObject(By.text("Allow"))
+            ?: device.findObject(By.text("ALLOW"))
             ?: device.findObject(By.text("While using the app"))
+            ?: device.findObject(By.res("com.android.permissioncontroller", "permission_allow_button"))
+            ?: device.findObject(By.res("com.android.permissioncontroller", "permission_allow_foreground_only_button"))
+            ?: device.findObject(By.res("android", "permission_allow_button"))
+            ?: device.findObject(By.res("android", "permission_allow_foreground_only_button"))
         allow?.click()
         device.waitForIdle()
     }

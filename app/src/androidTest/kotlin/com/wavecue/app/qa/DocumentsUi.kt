@@ -33,6 +33,14 @@ object DocumentsUi {
     private val device: UiDevice
         get() = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
+    fun isPickerOpen(timeoutMs: Long = 10_000): Boolean = pickerVisible(timeoutMs)
+
+    /** Foreground package plus all visible labels, for selector failures. */
+    fun describeForeground(): String {
+        val pkg = runCatching { device.currentPackageName }.getOrNull().orEmpty()
+        return "foreground=$pkg labels=${uiSnapshot(allPackages = true)}"
+    }
+
     private fun pickerVisible(timeoutMs: Long): Boolean {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
@@ -60,7 +68,8 @@ object DocumentsUi {
     fun pickFolder(name: String, timeoutMs: Long = 30_000) {
         val d = device
         check(pickerVisible(timeoutMs)) {
-            "the folder picker did not open (looked for ${PICKER_PKGS.joinToString()})"
+            "the folder picker did not open (looked for ${PICKER_PKGS.joinToString()}); " +
+                describeForeground()
         }
         d.waitForIdle()
 
@@ -89,9 +98,7 @@ object DocumentsUi {
             use = waitAnyEnabled(useThisFolderSelectors(), 10_000)
         }
         if (use == null) {
-            throw AssertionError(
-                "'Use this folder' is missing. Visible: ${uiSnapshot()}",
-            )
+            throw AssertionError("'Use this folder' is missing. ${describeForeground()}")
         }
         use.click()
         d.waitForIdle()
@@ -164,7 +171,6 @@ object DocumentsUi {
         val d = device
         val up = d.findObject(By.descContains("Navigate up"))
             ?: d.findObject(By.desc("Up"))
-            ?: d.findObject(By.descContains("Back"))
             ?: return false
         up.click()
         d.waitForIdle()
@@ -233,19 +239,31 @@ object DocumentsUi {
     }
 
     /** A compact dump of visible labels, used to make selector failures debuggable. */
-    private fun uiSnapshot(limit: Int = 60): String {
+    private fun uiSnapshot(limit: Int = 60, allPackages: Boolean = false): String {
         val seen = LinkedHashSet<String>()
-        for (pkg in PICKER_PKGS) {
-            val nodes = runCatching { device.findObjects(By.pkg(pkg)) }.getOrDefault(emptyList())
-            for (node in nodes) {
-                val text = node.text?.trim().orEmpty()
-                val desc = node.contentDescription?.trim().orEmpty()
-                if (text.isEmpty() && desc.isEmpty()) continue
-                val res = node.resourceName?.substringAfterLast('/').orEmpty()
-                seen.add("$res t='$text' d='$desc'")
-                if (seen.size >= limit) break
+        fun collect(node: UiObject2) {
+            val text = runCatching { node.text }.getOrNull()?.trim().orEmpty()
+            val desc = runCatching { node.contentDescription }.getOrNull()?.trim().orEmpty()
+            if (text.isEmpty() && desc.isEmpty()) return
+            val res = runCatching { node.resourceName }.getOrNull()?.substringAfterLast('/').orEmpty()
+            seen.add("$res t='$text' d='$desc'")
+        }
+        if (allPackages) {
+            val anyText = Pattern.compile(".+")
+            runCatching { device.findObjects(By.text(anyText)) }.getOrDefault(emptyList())
+                .forEach { collect(it) }
+            runCatching { device.findObjects(By.desc(anyText)) }.getOrDefault(emptyList())
+                .forEach { collect(it) }
+        } else {
+            for (pkg in PICKER_PKGS) {
+                val nodes = runCatching { device.findObjects(By.pkg(pkg)) }.getOrDefault(emptyList())
+                for (node in nodes) {
+                    collect(node)
+                    if (seen.size >= limit) break
+                }
             }
         }
-        return if (seen.isEmpty()) "(no labelled controls)" else seen.joinToString(" | ")
+        val trimmed = seen.take(limit)
+        return if (trimmed.isEmpty()) "(no labelled controls)" else trimmed.joinToString(" | ")
     }
 }
