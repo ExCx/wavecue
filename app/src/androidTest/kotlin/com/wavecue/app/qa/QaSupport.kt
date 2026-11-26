@@ -89,12 +89,21 @@ abstract class QaTest {
         // A previous test may have failed while DocumentsUI was in front.
         if (DocumentsUi.isPickerOpen(1_000)) {
             device.pressBack()
-            device.waitForIdle()
+            device.waitForIdle(2_000)
+        }
+        dismissSystemDialog()
+        // Wait for the app to be responsive and showing the library tab.
+        val deadline = System.currentTimeMillis() + 30_000
+        while (System.currentTimeMillis() < deadline) {
+            dismissSystemDialog()
+            val ready = runCatching {
+                compose.onAllNodesWithTag(TestTags.NavLibrary).fetchSemanticsNodes().isNotEmpty()
+            }.getOrDefault(false)
+            if (ready) break
+            Thread.sleep(500)
         }
         dismissSystemDialog()
         compose.waitForIdle()
-        // The startup permission prompt is launched from a LaunchedEffect, so it
-        // can land just after the activity resumes.
         Thread.sleep(400)
         dismissSystemDialog()
         compose.onNodeWithTag(TestTags.NavLibrary).performClick()
@@ -116,17 +125,26 @@ abstract class QaTest {
     // ---------------------------------------------------------------- compose
 
     protected fun waitUntil(timeoutMs: Long = 15_000, condition: () -> Boolean) {
-        compose.waitUntil(timeoutMs, condition)
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            dismissSystemDialog()
+            if (runCatching { condition() }.getOrDefault(false)) return
+            Thread.sleep(250)
+        }
+        dismissSystemDialog()
+        if (!runCatching { condition() }.getOrDefault(false)) {
+            throw AssertionError("Condition not satisfied after ${timeoutMs}ms")
+        }
     }
 
     protected fun waitForTag(tag: String, timeoutMs: Long = 15_000) {
-        compose.waitUntil(timeoutMs) {
+        waitUntil(timeoutMs) {
             compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
         }
     }
 
     protected fun waitUntilText(text: String, timeoutMs: Long = 15_000, substring: Boolean = false) {
-        compose.waitUntil(timeoutMs) {
+        waitUntil(timeoutMs) {
             compose.onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isNotEmpty()
         }
     }
@@ -173,8 +191,19 @@ abstract class QaTest {
     protected fun ensureFolderConfigured() {
         if (TestHarness.rootUris(context).isNotEmpty()) return
         compose.onNodeWithTag(TestTags.NavLibrary).performClick()
-        waitUntilText("Choose a folder", 20_000)
+        // The launcher can ANR under load and cover the app; keep dismissing
+        // while we wait for the empty library state to render.
+        val emptyDeadline = System.currentTimeMillis() + 30_000
+        while (System.currentTimeMillis() < emptyDeadline) {
+            dismissSystemDialog()
+            val ready = runCatching {
+                compose.onAllNodesWithText("Choose a folder").fetchSemanticsNodes().isNotEmpty()
+            }.getOrDefault(false)
+            if (ready) break
+            Thread.sleep(500)
+        }
         dismissSystemDialog()
+        waitUntilText("Choose a folder", 20_000)
 
         var opened = DocumentsUi.isPickerOpen(1_000)
         var attempts = 0
@@ -316,22 +345,22 @@ abstract class QaTest {
     }
 
     protected fun dismissSystemDialog() {
-        val allow = device.findObject(By.text("Allow"))
-            ?: device.findObject(By.text("ALLOW"))
-            ?: device.findObject(By.text("While using the app"))
+        val allow = device.findObject(By.res("android", "aerr_wait"))
+            ?: device.findObject(By.res("android", "aerr_close"))
             ?: device.findObject(By.text("Wait"))
             ?: device.findObject(By.text("WAIT"))
             ?: device.findObject(By.text("Close app"))
             ?: device.findObject(By.text("Close App"))
+            ?: device.findObject(By.text("Allow"))
+            ?: device.findObject(By.text("ALLOW"))
+            ?: device.findObject(By.text("While using the app"))
             ?: device.findObject(By.res("com.android.permissioncontroller", "permission_allow_button"))
             ?: device.findObject(By.res("com.android.permissioncontroller", "permission_allow_foreground_only_button"))
             ?: device.findObject(By.res("android", "permission_allow_button"))
             ?: device.findObject(By.res("android", "permission_allow_foreground_only_button"))
-            ?: device.findObject(By.res("android", "aerr_wait"))
-            ?: device.findObject(By.res("android", "aerr_close"))
             ?: device.findObject(By.res("android", "button1"))
         allow?.click()
-        device.waitForIdle()
+        device.waitForIdle(2_000)
     }
 
     protected fun shell(command: String): String {

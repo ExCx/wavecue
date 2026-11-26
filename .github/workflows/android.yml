@@ -80,12 +80,16 @@ jobs:
             adb shell 'n=0; until [ -d /sdcard/Download ] || [ $n -ge 120 ]; do n=$((n+1)); sleep 1; done'
             # Keep the launcher's ANR dialog from covering the app under test.
             adb shell settings put global anr_show_ui 0 || true
-            adb shell settings put global development_settings_enabled 1 || true
-            # Let the first-boot setup and dex2oat settle before hammering the device.
-            sleep 30
+            adb shell settings put secure anr_show_ui 0 || true
+            adb shell settings put system anr_show_ui 0 || true
+            adb shell wm dismiss-keyguard || true
+            adb shell input keyevent 82 || true
+            # Wait for the launcher process to exist and settle.
+            adb shell 'n=0; until pidof com.google.android.apps.nexuslauncher >/dev/null 2>&1 || [ $n -ge 60 ]; do n=$((n+1)); sleep 1; done'
+            sleep 60
             adb shell mkdir -p /sdcard/WaveCueFixtures
             adb push build/qa-fixtures/. /sdcard/WaveCueFixtures/
-            ./gradlew connectedDebugAndroidTest --stacktrace --console=plain --max-workers=2 > build/connected.log 2>&1
+            ./gradlew connectedDebugAndroidTest --stacktrace --console=plain --max-workers=1 > build/connected.log 2>&1
             status=$?
             tail -120 build/connected.log
             exit $status
