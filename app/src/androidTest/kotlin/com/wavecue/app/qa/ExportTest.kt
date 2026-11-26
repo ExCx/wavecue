@@ -34,9 +34,25 @@ class ExportTest : QaTest() {
         scrollToText("Export library as JSON")
         compose.onNodeWithText("Export library as JSON").performClick()
         DocumentsUi.saveFile()
-        runCatching { waitUntilText("Exported", 10_000) }
+        val snackbar = runCatching {
+            waitUntilText("Exported", 10_000)
+            "Exported"
+        }.getOrElse {
+            runCatching { waitUntilText("Export failed", 5_000) }.getOrNull()
+            "no Exported snackbar"
+        }
 
-        val json = shell("cat '${waitForFile("wavecue-backup.json")}'")
+        val deadline = System.currentTimeMillis() + 60_000
+        var path = ""
+        while (System.currentTimeMillis() < deadline && path.isEmpty()) {
+            path = shell("find / -type f -name 'wavecue-backup.json' 2>/dev/null | head -1").trim()
+            Thread.sleep(500)
+        }
+        if (path.isEmpty()) {
+            val downloadDir = shell("ls -la /sdcard/Download 2>&1 | head -40")
+            throw AssertionError("exported file 'wavecue-backup.json' not found. snackbar=$snackbar. Download dir: $downloadDir")
+        }
+        val json = shell("cat '$path'")
         assertTrue(json, json.contains("\"app\": \"WaveCue\""))
         assertTrue(json, json.contains(TRACK_OPENING))
         assertTrue(json, json.contains("\"title\": \"Drop\""))

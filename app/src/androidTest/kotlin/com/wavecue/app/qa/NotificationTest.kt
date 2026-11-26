@@ -36,13 +36,13 @@ class NotificationTest : QaTest() {
             waitForMediaState(paused = true, timeoutMs = 10_000),
         )
 
-        shell("input keyevent 126")
+        shell("input keyevent 85")
         var playAttempts = 0
         while (!TestHarness.isPlaying(context) && playAttempts < 5) {
             playAttempts++
             Thread.sleep(1_000)
             if (!TestHarness.isPlaying(context)) {
-                shell("input keyevent 126")
+                shell("input keyevent 85")
             }
         }
         waitUntil(15_000) { TestHarness.isPlaying(context) }

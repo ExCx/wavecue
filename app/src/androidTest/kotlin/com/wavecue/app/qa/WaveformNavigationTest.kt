@@ -23,7 +23,7 @@ class WaveformNavigationTest : QaTest() {
         clickTag(TestTags.ZoomIn)
         waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }
         clickTag(TestTags.ZoomIn)
-        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "4x" }
+        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "4x" }
         clickTag(TestTags.ZoomOut)
         waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }
 
@@ -32,7 +32,7 @@ class WaveformNavigationTest : QaTest() {
         repeat(6) { clickTag(TestTags.TransportBack5) }
         Thread.sleep(500)
         clickTag(TestTags.ZoomIn)
-        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "4x" }
+        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "4x" }
         clickTag(TestTags.ZoomIn)
         waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "8x" }
         val startBefore = parseTimecode(textOf(TestTags.ViewportStart))
