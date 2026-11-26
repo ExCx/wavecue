@@ -7,22 +7,28 @@ import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
+import java.util.regex.Pattern
 
 /**
  * The system file picker is a separate app, so it is driven with UiAutomator
  * rather than Compose. Selectors prefer visible text and fall back to the
  * framework ids, which have been stable across the DocumentsUI versions used
  * by the CI image.
+ *
+ * Two DocumentsUI builds exist: AOSP (`com.android.documentsui`) and Google's
+ * Files (`com.google.android.documentsui`), which is what the API 34
+ * `google_apis` emulator image ships. Material buttons can render all-caps, so
+ * the text selectors are case-insensitive.
  */
 object DocumentsUi {
 
-    // AOSP images ship com.android.documentsui; the google_apis image used by
-    // CI and by the local AVD ships Google's Files build instead.
     private val PICKER_PKGS = listOf(
         "com.google.android.documentsui",
         "com.android.documentsui",
     )
     private const val TARGET_PKG = "com.wavecue.app"
+
+    private val USE_THIS_FOLDER = Pattern.compile("(?i).*use this folder.*")
 
     private val device: UiDevice
         get() = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
@@ -38,6 +44,19 @@ object DocumentsUi {
 
     private fun pickerResource(id: String): List<BySelector> = PICKER_PKGS.map { By.res(it, id) }
 
+    private fun useThisFolderSelectors(): List<BySelector> = buildList {
+        addAll(pickerResource("action_menu_select"))
+        addAll(pickerResource("use_folder"))
+        addAll(pickerResource("use_this_folder"))
+        addAll(pickerResource("button1"))
+        add(By.text(USE_THIS_FOLDER))
+        add(By.desc(USE_THIS_FOLDER))
+        add(By.textContains("USE THIS FOLDER"))
+        add(By.textContains("Use this folder"))
+        add(By.descContains("USE THIS FOLDER"))
+        add(By.descContains("Use this folder"))
+    }
+
     fun pickFolder(name: String, timeoutMs: Long = 30_000) {
         val d = device
         check(pickerVisible(timeoutMs)) {
@@ -47,6 +66,10 @@ object DocumentsUi {
 
         openDrawerIfPresent()
         selectInternalStorage()
+
+        if (!waitForText(name, 15_000)) {
+            throw AssertionError("folder '$name' did not appear. Visible: ${uiSnapshot()}")
+        }
         scrollTo(name)
 
         val folder = d.findObject(By.text(name))
@@ -54,13 +77,22 @@ object DocumentsUi {
         folder.click()
         d.waitForIdle()
 
-        val use = waitAny(
-            listOf(
-                By.textContains("Use this folder"),
-                By.descContains("Use this folder"),
-            ) + pickerResource("action_menu_select"),
-            15_000,
-        ) ?: throw AssertionError("'Use this folder' is missing")
+        var use = waitAnyEnabled(useThisFolderSelectors(), 12_000)
+        if (use == null) {
+            // Some DocumentsUI builds hide the confirmation for the folder the
+            // picker opened in; stepping up and back in makes it appear.
+            if (navigateUp()) {
+                Thread.sleep(500)
+                d.findObject(By.text(name))?.click()
+                d.waitForIdle()
+            }
+            use = waitAnyEnabled(useThisFolderSelectors(), 10_000)
+        }
+        if (use == null) {
+            throw AssertionError(
+                "'Use this folder' is missing. Visible: ${uiSnapshot()}",
+            )
+        }
         use.click()
         d.waitForIdle()
 
@@ -89,10 +121,11 @@ object DocumentsUi {
             listOf(
                 By.text("Save"),
                 By.textContains("Save"),
+                By.descContains("Save"),
                 By.res("android", "button1"),
-            ) + pickerResource("action_menu_select"),
+            ) + pickerResource("action_menu_select") + pickerResource("save"),
             15_000,
-        ) ?: throw AssertionError("'Save' is missing from the document dialog")
+        ) ?: throw AssertionError("'Save' is missing from the document dialog. Visible: ${uiSnapshot()}")
         save.click()
         d.waitForIdle()
 
@@ -109,6 +142,7 @@ object DocumentsUi {
         val d = device
         val hamburger = d.findObject(By.desc("Show roots"))
             ?: d.findObject(By.desc("Open navigation drawer"))
+            ?: d.findObject(By.descContains("Show roots"))
         if (hamburger == null) return
         hamburger.click()
         d.waitForIdle()
@@ -118,11 +152,23 @@ object DocumentsUi {
     private fun selectInternalStorage() {
         val d = device
         val storage = d.findObject(By.textContains("Internal storage"))
+            ?: d.findObject(By.textContains("Internal Storage"))
             ?: d.findObject(By.textContains("sdk_gphone"))
             ?: d.findObject(By.textContains("emulator"))
             ?: return
         storage.click()
         d.waitForIdle()
+    }
+
+    private fun navigateUp(): Boolean {
+        val d = device
+        val up = d.findObject(By.descContains("Navigate up"))
+            ?: d.findObject(By.desc("Up"))
+            ?: d.findObject(By.descContains("Back"))
+            ?: return false
+        up.click()
+        d.waitForIdle()
+        return true
     }
 
     private fun scrollTo(name: String) {
@@ -142,7 +188,17 @@ object DocumentsUi {
                 )
             }
             d.waitForIdle()
+            Thread.sleep(250)
         }
+    }
+
+    private fun waitForText(text: String, timeoutMs: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (device.findObject(By.text(text)) != null) return true
+            Thread.sleep(200)
+        }
+        return false
     }
 
     private fun waitAny(selectors: List<BySelector>, timeoutMs: Long): UiObject2? {
@@ -154,5 +210,42 @@ object DocumentsUi {
             Thread.sleep(200)
         }
         return null
+    }
+
+    /** Waits for a match that can actually be tapped, not just a disabled stub. */
+    private fun waitAnyEnabled(selectors: List<BySelector>, timeoutMs: Long): UiObject2? {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        var sawDisabled = false
+        while (System.currentTimeMillis() < deadline) {
+            for (selector in selectors) {
+                val node = device.findObject(selector) ?: continue
+                if (node.isEnabled) return node
+                sawDisabled = true
+            }
+            Thread.sleep(200)
+        }
+        if (sawDisabled) {
+            throw AssertionError(
+                "'Use this folder' was found but stayed disabled. Visible: ${uiSnapshot()}",
+            )
+        }
+        return null
+    }
+
+    /** A compact dump of visible labels, used to make selector failures debuggable. */
+    private fun uiSnapshot(limit: Int = 60): String {
+        val seen = LinkedHashSet<String>()
+        for (pkg in PICKER_PKGS) {
+            val nodes = runCatching { device.findObjects(By.pkg(pkg)) }.getOrDefault(emptyList())
+            for (node in nodes) {
+                val text = node.text?.trim().orEmpty()
+                val desc = node.contentDescription?.trim().orEmpty()
+                if (text.isEmpty() && desc.isEmpty()) continue
+                val res = node.resourceName?.substringAfterLast('/').orEmpty()
+                seen.add("$res t='$text' d='$desc'")
+                if (seen.size >= limit) break
+            }
+        }
+        return if (seen.isEmpty()) "(no labelled controls)" else seen.joinToString(" | ")
     }
 }
