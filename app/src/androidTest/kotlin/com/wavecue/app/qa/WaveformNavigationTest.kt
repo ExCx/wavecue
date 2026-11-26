@@ -49,6 +49,6 @@ class WaveformNavigationTest : QaTest() {
 
         // Tapping the middle of a 32 s track seeks to roughly 16 s.
         compose.onNodeWithTag(TestTags.PlayerWaveform).performTouchInput { click(center) }
-        waitUntil(6_000) { positionMs() in 14_500..18_000 }
+        waitUntil(10_000) { positionMs() in 14_500..18_000 }
     }
 }

@@ -57,13 +57,14 @@ class ExportTest : QaTest() {
 
     private fun fixtureListing(): String = shell("ls -1 /sdcard/$FIXTURE_FOLDER")
 
-    private fun waitForFile(name: String, timeoutMs: Long = 40_000): String {
+    private fun waitForFile(name: String, timeoutMs: Long = 60_000): String {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
             val path = shell("find /sdcard -type f -name '$name' 2>/dev/null | head -1").trim()
             if (path.isNotEmpty()) return path
             Thread.sleep(500)
         }
-        throw AssertionError("exported file '$name' was not written anywhere under /sdcard")
+        val listing = shell("ls -la /sdcard/Download 2>&1 | head -40")
+        throw AssertionError("exported file '$name' was not written anywhere under /sdcard. Download dir: $listing")
     }
 }

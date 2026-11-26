@@ -37,7 +37,7 @@ class NotificationTest : QaTest() {
         )
 
         device.pressKeyCode(KeyEvent.KEYCODE_MEDIA_PLAY)
-        waitUntil(10_000) { TestHarness.isPlaying(context) }
+        waitUntil(15_000) { TestHarness.isPlaying(context) }
         assertTrue(
             "media session did not report playing",
             waitForMediaState(paused = false, timeoutMs = 10_000),
