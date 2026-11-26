@@ -25,6 +25,7 @@ import androidx.test.uiautomator.UiDevice
 import com.wavecue.app.MainActivity
 import com.wavecue.app.testing.TestHarness
 import com.wavecue.app.ui.TestTags
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.rules.RuleChain
@@ -85,6 +86,11 @@ abstract class QaTest {
 
     @Before
     fun startFromLibrary() {
+        // A previous test may have failed while DocumentsUI was in front.
+        if (DocumentsUi.isPickerOpen(1_000)) {
+            device.pressBack()
+            device.waitForIdle()
+        }
         dismissSystemDialog()
         compose.waitForIdle()
         // The startup permission prompt is launched from a LaunchedEffect, so it
@@ -92,6 +98,17 @@ abstract class QaTest {
         Thread.sleep(400)
         dismissSystemDialog()
         compose.onNodeWithTag(TestTags.NavLibrary).performClick()
+    }
+
+    @After
+    fun leaveSystemUi() {
+        repeat(2) {
+            if (runCatching { device.currentPackageName }.getOrNull() == context.packageName) {
+                return
+            }
+            device.pressBack()
+            device.waitForIdle()
+        }
     }
 
     // ---------------------------------------------------------------- compose
@@ -153,15 +170,30 @@ abstract class QaTest {
     protected fun ensureFolderConfigured() {
         if (TestHarness.rootUris(context).isNotEmpty()) return
         compose.onNodeWithTag(TestTags.NavLibrary).performClick()
+        waitUntilText("Choose a folder", 20_000)
         dismissSystemDialog()
-        var opened = false
+
+        var opened = DocumentsUi.isPickerOpen(1_000)
         var attempts = 0
         while (!opened && attempts < 2) {
             attempts++
-            compose.onNodeWithText("Choose a folder").performClick()
-            opened = DocumentsUi.isPickerOpen(20_000)
+            val clicked = runCatching {
+                compose.onNodeWithText("Choose a folder").performClick()
+                true
+            }.getOrDefault(false)
+
+            // The first launch of DocumentsUI on a cold emulator can take well
+            // over 30 s, and a Compose tap fails once the picker owns the
+            // screen, so give the picker the full window before deciding.
+            opened = DocumentsUi.isPickerOpen(60_000)
+            if (!opened && !clicked) {
+                throw AssertionError(
+                    "the folder picker never opened and the app had no Compose hierarchy; " +
+                        DocumentsUi.describeForeground(),
+                )
+            }
             if (!opened) {
-                // A system dialog may have taken the first tap. Dismiss and retry.
+                // A system dialog may have taken the tap. Dismiss and retry.
                 dismissSystemDialog()
             }
         }
