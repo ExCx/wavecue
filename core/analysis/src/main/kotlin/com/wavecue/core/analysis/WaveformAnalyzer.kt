@@ -26,6 +26,7 @@ class WaveformAnalyzer(private val context: Context) {
     ): WaveformData = withContext(Dispatchers.IO) {
         val source = PcmSourceFactory.open(context, uri, displayName)
         try {
+            source.seekToFrame(0)
             android.util.Log.d("WaveformAnalyzer", "opened $displayName: sr=${source.sampleRate} ch=${source.channelCount} bd=${source.bitDepth} dur=${source.durationFrames} codec=${source.codec}")
             val channels = source.channelCount
             val sampleRate = source.sampleRate
