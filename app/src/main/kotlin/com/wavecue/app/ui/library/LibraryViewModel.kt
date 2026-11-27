@@ -1,6 +1,7 @@
 package com.wavecue.app.ui.library
 
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wavecue.app.playback.PlaybackController
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 data class FolderCrumb(val documentId: String, val name: String)
 
@@ -36,6 +38,7 @@ data class LibraryUiState(
 
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
+    @ApplicationContext private val context: android.content.Context,
     private val library: LibraryRepository,
     private val playlists: PlaylistRepository,
     private val controller: PlaybackController,
@@ -173,11 +176,50 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    /** Plays a set of individually picked files as a temporary queue. */
+    fun playPickedFiles(uris: List<Uri>) {
+        viewModelScope.launch {
+            _ui.value = _ui.value.copy(loading = true, error = null)
+            try {
+                val items = withContext(Dispatchers.IO) {
+                    uris.mapIndexed { index, uri ->
+                        val name = displayName(uri)
+                        QueueItem(trackId = 0, uri = uri.toString(), name = name)
+                    }
+                }
+                if (items.isEmpty()) {
+                    _ui.value = _ui.value.copy(loading = false, error = "No playable audio selected")
+                    return@launch
+                }
+                withContext(Dispatchers.Main) {
+                    controller.playQueue(items, 0, "Picked files")
+                }
+                _ui.value = _ui.value.copy(loading = false, playingUri = items.first().uri)
+            } catch (t: Throwable) {
+                _ui.value = _ui.value.copy(loading = false, error = t.message ?: "Cannot start playback")
+            }
+        }
+    }
+
+    private fun displayName(uri: Uri): String {
+        return try {
+            val projection = arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            } ?: uri.lastPathSegment ?: "Audio file"
+        } catch (_: Exception) {
+            uri.lastPathSegment ?: "Audio file"
+        }
+    }
+
     fun addToPlaylist(playlistId: Long, node: DocumentNode) {
         viewModelScope.launch {
             try {
                 val track = library.ensureTrack(node)
-                playlists.addTrack(playlistId, track.id)
+                val added = playlists.addTrack(playlistId, track.id)
+                if (!added) {
+                    _ui.value = _ui.value.copy(error = "Already in this playlist")
+                }
             } catch (_: Throwable) {
                 // A failing insert is visible through the playlist staying unchanged.
             }

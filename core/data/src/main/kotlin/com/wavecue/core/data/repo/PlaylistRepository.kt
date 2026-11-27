@@ -60,11 +60,14 @@ class PlaylistRepository @Inject constructor(
         playlistDao.delete(playlistId)
     }
 
-    suspend fun addTrack(playlistId: Long, trackId: Long) = withContext(Dispatchers.IO) {
+    /** Returns true if the track was added, false if it was already in the playlist. */
+    suspend fun addTrack(playlistId: Long, trackId: Long): Boolean = withContext(Dispatchers.IO) {
+        if (playlistDao.entriesFor(playlistId).any { it.trackId == trackId }) return@withContext false
         val position = playlistDao.maxPosition(playlistId) + 1
         playlistDao.insertEntry(
             PlaylistEntryEntity(playlistId = playlistId, trackId = trackId, position = position)
         )
+        true
     }
 
     suspend fun removeEntry(entryId: Long) = withContext(Dispatchers.IO) {

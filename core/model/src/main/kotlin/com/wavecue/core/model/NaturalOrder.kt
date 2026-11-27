@@ -40,13 +40,10 @@ object NaturalOrder : Comparator<String> {
                 i = j
             }
         }
-        // Drop a leading pure-number token when it reads like a track prefix.
-        if (out.size >= 2 && out[0] is Long) {
-            val rest = out[1].toString().trimStart()
-            if (rest.startsWith("-") || rest.startsWith(".") || rest.startsWith("_") || rest.startsWith(" ")) {
-                out.removeAt(0)
-            }
-        }
+        // Keep leading track numbers as the primary sort key so that
+        // "01 - Song", "02 - Song", ..., "10 - Song" sort in numeric order.
+        // The previous behaviour dropped the prefix and sorted by title, which
+        // made embedded numbers compare lexicographically ("10" before "2").
         return out
     }
 }

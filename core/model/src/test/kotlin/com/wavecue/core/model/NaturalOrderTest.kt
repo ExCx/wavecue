@@ -15,11 +15,12 @@ class NaturalOrderTest {
     }
 
     @Test
-    fun ignoresLeadingTrackNumbersFollowedBySeparators() {
-        // Prefixes are dropped, so the titles decide the order for album folders.
+    fun sortsByLeadingTrackNumberWhenPresent() {
+        // Leading track numbers are the primary sort key, so "01", "02", ...,
+        // "10" land in numeric order instead of "1", "10", "2".
         val input = listOf("10 - Zebra", "2 - Alpha", "01 - Mango")
         assertEquals(
-            listOf("2 - Alpha", "01 - Mango", "10 - Zebra"),
+            listOf("01 - Mango", "2 - Alpha", "10 - Zebra"),
             input.sortedWith(NaturalOrder),
         )
     }

@@ -83,7 +83,8 @@ class WavPcmSource private constructor(
             }
             bits == 16 -> {
                 while (sampleIndex < samples) {
-                    val v = readInt16(bytes, byteIndex)
+                    val v = (bytes[byteIndex].toInt() and 0xFF) or
+                        (bytes[byteIndex + 1].toInt() shl 8)
                     out[sampleIndex++] = v / 32768f
                     byteIndex += 2
                 }
@@ -99,7 +100,10 @@ class WavPcmSource private constructor(
             }
             bits == 32 -> {
                 while (sampleIndex < samples) {
-                    val v = readInt32(bytes, byteIndex)
+                    val v = (bytes[byteIndex].toInt() and 0xFF) or
+                        ((bytes[byteIndex + 1].toInt() and 0xFF) shl 8) or
+                        ((bytes[byteIndex + 2].toInt() and 0xFF) shl 16) or
+                        (bytes[byteIndex + 3].toInt() shl 24)
                     out[sampleIndex++] = (v / 2147483648.0).toFloat()
                     byteIndex += 4
                 }

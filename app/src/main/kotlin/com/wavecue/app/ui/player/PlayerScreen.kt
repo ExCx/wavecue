@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -224,14 +225,14 @@ fun PlayerScreen(
                             modifier = Modifier.testTag(TestTags.ZoomLabel),
                         )
                         IconButton(
-                            onClick = { viewport.zoomOut() },
+                            onClick = { viewport.zoomOut((positionMs.toFloat() / timelineMs.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)) },
                             enabled = viewport.zoom > 1f,
                             modifier = Modifier.testTag(TestTags.ZoomOut),
                         ) {
                             Icon(Icons.Filled.ZoomOut, contentDescription = "Zoom out")
                         }
                         IconButton(
-                            onClick = { viewport.zoomIn() },
+                            onClick = { viewport.zoomIn((positionMs.toFloat() / timelineMs.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)) },
                             enabled = viewport.zoom < viewport.maxZoom,
                             modifier = Modifier.testTag(TestTags.ZoomIn),
                         ) {
@@ -367,7 +368,7 @@ fun PlayerScreen(
                 )
             }
 
-            Box(Modifier.weight(1f)) {
+            Box(Modifier.weight(1f).heightIn(min = 160.dp)) {
                 when (section) {
                     0 -> FlagList(
                         flags = flags,

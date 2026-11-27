@@ -129,7 +129,7 @@ fun WaveformView(
                             }
                         }
                     }
-                    if (offset.y >= size.height - 26.dp.toPx()) {
+                    if (offset.y >= size.height - 40.dp.toPx()) {
                         val nearest = notes.minByOrNull { abs(msAt(offset.x) - it.timeMs) }
                         if (nearest != null) {
                             val nearestX = xForMs(nearest.timeMs, startMs, timelineMs, visible, width)
@@ -197,9 +197,13 @@ fun WaveformView(
                 if (x - previousX < 0f) continue
                 previousX = x
 
-                val minV = level.min[bin] / 32768f
-                val maxV = level.max[bin] / 32768f
-                val rmsV = level.rms[bin] / 32768f
+                // Square-root (compressed) amplitude scale so 24-bit and 16-bit
+                // files with different dynamic ranges render identically.
+                val minV = kotlin.math.sign(level.min[bin].toFloat()) *
+                    kotlin.math.sqrt(kotlin.math.abs(level.min[bin].toFloat()) / 32768f)
+                val maxV = kotlin.math.sign(level.max[bin].toFloat()) *
+                    kotlin.math.sqrt(kotlin.math.abs(level.max[bin].toFloat()) / 32768f)
+                val rmsV = kotlin.math.sqrt(level.rms[bin].toFloat() / 32768f)
                 val color = if (x <= playheadX) playedColor else musicColor
 
                 drawLine(
@@ -242,8 +246,8 @@ fun WaveformView(
             if (x < -4f || x > width + 4f) return@forEach
             drawCircle(
                 color = WaveCueColors.Note,
-                radius = 4f,
-                center = Offset(x, height - 12.dp.toPx()),
+                radius = 6f,
+                center = Offset(x, height - 14.dp.toPx()),
             )
             drawLine(
                 color = WaveCueColors.Note.copy(alpha = 0.35f),

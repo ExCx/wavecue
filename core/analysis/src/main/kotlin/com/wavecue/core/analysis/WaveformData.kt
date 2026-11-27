@@ -93,12 +93,12 @@ class WaveformData(
                 file.inputStream().buffered().use { stream ->
                     val magic = ByteArray(4)
                     if (stream.read(magic) != 4) return null
-                    if (String(magic, Charsets.US_ASCII) != "WCV1") return null
+                    if (String(magic, Charsets.US_ASCII) != "WCV2") return null
                     val header = ByteArray(4 * 4 + 8)
                     if (stream.read(header) != header.size) return null
                     val buffer = java.nio.ByteBuffer.wrap(header).order(java.nio.ByteOrder.LITTLE_ENDIAN)
                     val version = buffer.int
-                    if (version != 1) return null
+                    if (version != 2) return null
                     val sampleRate = buffer.int
                     val channels = buffer.int
                     val framesPerBin = buffer.int
@@ -133,9 +133,9 @@ class WaveformData(
             file.parentFile?.mkdirs()
             val temp = File(file.parentFile, file.name + ".tmp")
             temp.outputStream().buffered().use { stream ->
-                stream.write("WCV1".toByteArray(Charsets.US_ASCII))
+                stream.write("WCV2".toByteArray(Charsets.US_ASCII))
                 val header = java.nio.ByteBuffer.allocate(4 * 4 + 8).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-                header.putInt(1)
+                header.putInt(2)
                 header.putInt(data.sampleRate)
                 header.putInt(data.channelCount)
                 header.putInt(data.framesPerBin)

@@ -74,6 +74,12 @@ fun LibraryScreen(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> uri?.let(viewModel::addRoot) }
 
+    val filePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris ->
+        if (uris.isNotEmpty()) viewModel.playPickedFiles(uris)
+    }
+
     var addTarget by remember { mutableStateOf<DocumentNode?>(null) }
     var rootMenu by remember { mutableStateOf<Long?>(null) }
 
@@ -82,6 +88,7 @@ fun LibraryScreen(
             RootsHeader(
                 rootCount = roots.size,
                 onAdd = { picker.launch(null) },
+                onPickFiles = { filePicker.launch(arrayOf("audio/*")) },
             )
         } else {
             BrowserHeader(
@@ -129,6 +136,10 @@ fun LibraryScreen(
                     actionLabel = "Choose a folder",
                     onAction = { picker.launch(null) },
                 )
+                Spacer(Modifier.height(12.dp))
+                TextButton(onClick = { filePicker.launch(arrayOf("audio/*")) }) {
+                    Text("Or pick audio files directly")
+                }
             } else {
                 LazyColumn(
                     Modifier.fillMaxSize(),
@@ -230,7 +241,7 @@ fun LibraryScreen(
 }
 
 @Composable
-private fun RootsHeader(rootCount: Int, onAdd: () -> Unit) {
+private fun RootsHeader(rootCount: Int, onAdd: () -> Unit, onPickFiles: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -247,6 +258,9 @@ private fun RootsHeader(rootCount: Int, onAdd: () -> Unit) {
         }
         IconButton(onClick = onAdd) {
             Icon(Icons.Filled.Add, contentDescription = "Add folder")
+        }
+        IconButton(onClick = onPickFiles) {
+            Icon(Icons.Filled.LibraryMusic, contentDescription = "Pick audio files")
         }
     }
 }
