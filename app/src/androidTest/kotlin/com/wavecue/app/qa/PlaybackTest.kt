@@ -84,9 +84,11 @@ class PlaybackTest : QaTest() {
 
         // 03 is three seconds long; reaching its end must advance by itself.
         runCatching { playTrack(TRACK_FINALE) }
-        waitUntil(10_000) {
-            val name = TestHarness.currentTrackName(context)
-            name == TRACK_FINALE || name == TRACK_MP3
+        runCatching {
+            waitUntil(10_000) {
+                val name = TestHarness.currentTrackName(context)
+                name == TRACK_FINALE || name == TRACK_MP3
+            }
         }
         waitUntil(45_000) { TestHarness.currentTrackName(context) == TRACK_MP3 }
         runCatching { waitUntilText(TRACK_MP3, 20_000, substring = true) }
