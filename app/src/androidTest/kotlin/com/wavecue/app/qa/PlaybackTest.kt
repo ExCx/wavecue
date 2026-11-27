@@ -83,10 +83,7 @@ class PlaybackTest : QaTest() {
         runCatching { waitUntilText(TRACK_MIDDLE, 10_000, substring = true) }
 
         // 03 is three seconds long; reaching its end must advance by itself.
-        openRoot()
-        compose.onNodeWithTag(TestTags.libraryTrack(TRACK_FINALE)).performClick()
-        compose.onNodeWithTag(TestTags.NavPlayer).performClick()
-        runCatching { waitForTag(TestTags.PlayerPosition, 20_000) }
+        runCatching { playTrack(TRACK_FINALE) }
         waitUntil(10_000) {
             val name = TestHarness.currentTrackName(context)
             name == TRACK_FINALE || name == TRACK_MP3
