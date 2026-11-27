@@ -102,8 +102,6 @@ object DocumentsUi {
             throw AssertionError("'Use this folder' is missing. ${describeForeground()}")
         }
         use.click()
-        // Coordinate-based tap as a fallback for toolbar buttons.
-        device.click(use.visibleBounds.centerX(), use.visibleBounds.centerY())
         d.waitForIdle()
 
         // The confirmation sometimes needs a second tap or an Enter keypress on
@@ -117,7 +115,6 @@ object DocumentsUi {
             // Retry the confirmation tap if the picker is still open.
             if (d.findObject(By.pkg(PICKER_PKGS[0])) != null || d.findObject(By.pkg(PICKER_PKGS[1])) != null) {
                 use.click()
-                device.click(use.visibleBounds.centerX(), use.visibleBounds.centerY())
                 d.waitForIdle(1_000)
             }
         }

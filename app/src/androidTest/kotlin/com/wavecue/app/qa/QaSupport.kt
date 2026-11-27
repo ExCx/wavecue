@@ -362,6 +362,12 @@ abstract class QaTest {
                 ?: device.findObject(By.res("android", "button1"))
             allow?.click()
             device.waitForIdle(2_000)
+            // Fallback: press Back in case the dialog is modal and didn't close.
+            if (device.findObject(By.res("android", "aerr_wait")) != null ||
+                device.findObject(By.res("android", "aerr_close")) != null) {
+                device.pressBack()
+                device.waitForIdle(1_000)
+            }
         }
     }
 
