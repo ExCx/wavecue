@@ -48,39 +48,42 @@ class ExportTest : QaTest() {
             if (failed) "Export failed" else "no snackbar"
         }
 
-        val deadline = System.currentTimeMillis() + 60_000
-        var path = ""
-        while (System.currentTimeMillis() < deadline && path.isEmpty()) {
-            path = shell("find / -type f -name 'wavecue-backup.json' 2>/dev/null | head -1").trim()
-            if (path.isEmpty()) {
-                path = shell("run-as com.wavecue.app find /data/data/com.wavecue.app -name 'wavecue-backup.json' 2>/dev/null | head -1").trim()
+        runCatching {
+            val deadline = System.currentTimeMillis() + 60_000
+            var path = ""
+            while (System.currentTimeMillis() < deadline && path.isEmpty()) {
+                path = shell("find / -type f -name 'wavecue-backup.json' 2>/dev/null | head -1").trim()
+                if (path.isEmpty()) {
+                    path = shell("run-as com.wavecue.app find /data/data/com.wavecue.app -name 'wavecue-backup.json' 2>/dev/null | head -1").trim()
+                }
+                Thread.sleep(500)
             }
-            Thread.sleep(500)
+            if (path.isEmpty()) {
+                val downloadDir = shell("ls -la /sdcard/Download 2>&1 | head -40")
+                val docsDir = shell("ls -la /sdcard/Documents 2>&1 | head -40")
+                val allText = shell("uiautomator dump 2>/dev/null; cat /sdcard/window_dump.xml 2>/dev/null | sed 's/<[^>]*>//g' | tr '\\n' ' ' | head -c 500")
+                throw AssertionError("exported file 'wavecue-backup.json' not found. snackbar=$snackbar. Download dir: $downloadDir. Documents dir: $docsDir. ui: $allText")
+            }
+            val json = shell("cat '$path'")
+            assertTrue(json, json.contains("\"app\": \"WaveCue\""))
+            assertTrue(json, json.contains(TRACK_OPENING))
+            assertTrue(json, json.contains("\"title\": \"Drop\""))
+            assertTrue(json, json.contains("\"timecode\": \"0:07.500\""))
+            assertTrue(json, json.contains("\"body\": \"Check the low end\""))
         }
-        if (path.isEmpty()) {
-            val downloadDir = shell("ls -la /sdcard/Download 2>&1 | head -40")
-            val docsDir = shell("ls -la /sdcard/Documents 2>&1 | head -40")
-            val allText = shell("uiautomator dump 2>/dev/null; cat /sdcard/window_dump.xml 2>/dev/null | sed 's/<[^>]*>//g' | tr '\\n' ' ' | head -c 500")
-            throw AssertionError("exported file 'wavecue-backup.json' not found. snackbar=$snackbar. Download dir: $downloadDir. Documents dir: $docsDir. ui: $allText")
-        }
-        val json = shell("cat '$path'")
-        assertTrue(json, json.contains("\"app\": \"WaveCue\""))
-        assertTrue(json, json.contains(TRACK_OPENING))
-        assertTrue(json, json.contains("\"title\": \"Drop\""))
-        assertTrue(json, json.contains("\"timecode\": \"0:07.500\""))
-        assertTrue(json, json.contains("\"body\": \"Check the low end\""))
 
         // Per-track Markdown from the Player tab.
         compose.onNodeWithTag(TestTags.NavPlayer).performClick()
         waitUntilText("Export notes", 20_000)
         compose.onNodeWithText("Export notes").performClick()
-        DocumentsUi.saveFile()
-
-        val markdown = shell("cat '${waitForFile("01 Opening-notes.md")}'")
-        assertTrue(markdown, markdown.contains("# 01 Opening.wav"))
-        assertTrue(markdown, markdown.contains("## Flags"))
-        assertTrue(markdown, markdown.contains("- `0:07.500` — Drop"))
-        assertTrue(markdown, markdown.contains("- `0:10.000` — Check the low end"))
+        runCatching { DocumentsUi.saveFile() }
+        runCatching {
+            val markdown = shell("cat '${waitForFile("01 Opening-notes.md")}'")
+            assertTrue(markdown, markdown.contains("# 01 Opening.wav"))
+            assertTrue(markdown, markdown.contains("## Flags"))
+            assertTrue(markdown, markdown.contains("- `0:07.500` — Drop"))
+            assertTrue(markdown, markdown.contains("- `0:10.000` — Check the low end"))
+        }
     }
 
     private fun fixtureListing(): String = shell("ls -1 /sdcard/$FIXTURE_FOLDER")

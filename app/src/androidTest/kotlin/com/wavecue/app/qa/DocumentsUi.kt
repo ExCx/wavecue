@@ -120,7 +120,7 @@ object DocumentsUi {
         }
 
         // Wait for the app to fully return.
-        val returnDeadline = System.currentTimeMillis() + 30_000
+        val returnDeadline = System.currentTimeMillis() + 10_000
         while (System.currentTimeMillis() < returnDeadline) {
             if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
             // Retry the confirmation if the picker is still on screen.
@@ -173,7 +173,7 @@ object DocumentsUi {
         )?.click()
         d.waitForIdle()
 
-        val returnDeadline = System.currentTimeMillis() + 30_000
+        val returnDeadline = System.currentTimeMillis() + 10_000
         var returned = false
         while (System.currentTimeMillis() < returnDeadline) {
             if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
