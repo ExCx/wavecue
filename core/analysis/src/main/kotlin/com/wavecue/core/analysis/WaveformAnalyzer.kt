@@ -26,6 +26,7 @@ class WaveformAnalyzer(private val context: Context) {
     ): WaveformData = withContext(Dispatchers.IO) {
         val source = PcmSourceFactory.open(context, uri, displayName)
         try {
+            android.util.Log.d("WaveformAnalyzer", "opened $displayName: sr=${source.sampleRate} ch=${source.channelCount} bd=${source.bitDepth} dur=${source.durationFrames} codec=${source.codec}")
             val channels = source.channelCount
             val sampleRate = source.sampleRate
             val bitDepth = source.bitDepth
@@ -89,7 +90,7 @@ class WaveformAnalyzer(private val context: Context) {
             onProgress(1f)
 
             val durationMs = if (sampleRate > 0) totalFrames * 1000 / sampleRate else 0L
-            android.util.Log.d("WaveformAnalyzer", "analyzed $displayName: bins=${mins.size} sr=$sampleRate ch=$channels bd=$bitDepth firstMin=${mins.getOrElse(0){0}} firstMax=${maxs.getOrElse(0){0}} firstRms=${rmsValues.getOrElse(0){0}} durationMs=$durationMs totalFrames=$totalFrames uri=$uri")
+            android.util.Log.d("WaveformAnalyzer", "analyzed $displayName: bins=${mins.size} sr=$sampleRate ch=$channels bd=$bitDepth firstMin=${mins.getOrElse(0){0}} firstMax=${maxs.getOrElse(0){0}} firstRms=${rmsValues.getOrElse(0){0}} durationMs=$durationMs totalFrames=$totalFrames firstBuf=${buffer.getOrElse(0){0f}},${buffer.getOrElse(1){0f}},${buffer.getOrElse(2){0f}}")
             WaveformData(
                 sampleRate = sampleRate,
                 channelCount = channels,
