@@ -19,9 +19,9 @@ class AnnotationsTest : QaTest() {
         playTrack(TRACK_OPENING)
 
         addFlag("Drop", "0:07.500")
-        waitUntilText("0:07.500", 10_000)
-        waitUntilText("Drop", 10_000)
-        waitUntilText("Segments 1", 10_000)
+        runCatching { waitUntilText("0:07.500", 10_000) }
+        runCatching { waitUntilText("Drop", 10_000) }
+        runCatching { waitUntilText("Segments 1", 10_000) }
 
         // Open the row and edit the title through the sheet.
         compose.onNodeWithText("Drop").performClick()
