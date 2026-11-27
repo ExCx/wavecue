@@ -89,7 +89,7 @@ class WaveformAnalyzer(private val context: Context) {
             onProgress(1f)
 
             val durationMs = if (sampleRate > 0) totalFrames * 1000 / sampleRate else 0L
-            android.util.Log.d("WaveformAnalyzer", "analyzed $displayName: bins=${mins.size} sr=$sampleRate ch=$channels bd=$bitDepth firstMin=${mins.getOrElse(0){0}} firstMax=${maxs.getOrElse(0){0}} firstRms=${rmsValues.getOrElse(0){0}} durationMs=$durationMs totalFrames=$totalFrames")
+            android.util.Log.d("WaveformAnalyzer", "analyzed $displayName: bins=${mins.size} sr=$sampleRate ch=$channels bd=$bitDepth firstMin=${mins.getOrElse(0){0}} firstMax=${maxs.getOrElse(0){0}} firstRms=${rmsValues.getOrElse(0){0}} durationMs=$durationMs totalFrames=$totalFrames uri=$uri")
             WaveformData(
                 sampleRate = sampleRate,
                 channelCount = channels,
