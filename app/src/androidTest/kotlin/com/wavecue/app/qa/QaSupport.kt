@@ -345,22 +345,24 @@ abstract class QaTest {
     }
 
     protected fun dismissSystemDialog() {
-        val allow = device.findObject(By.res("android", "aerr_wait"))
-            ?: device.findObject(By.res("android", "aerr_close"))
-            ?: device.findObject(By.text("Wait"))
-            ?: device.findObject(By.text("WAIT"))
-            ?: device.findObject(By.text("Close app"))
-            ?: device.findObject(By.text("Close App"))
-            ?: device.findObject(By.text("Allow"))
-            ?: device.findObject(By.text("ALLOW"))
-            ?: device.findObject(By.text("While using the app"))
-            ?: device.findObject(By.res("com.android.permissioncontroller", "permission_allow_button"))
-            ?: device.findObject(By.res("com.android.permissioncontroller", "permission_allow_foreground_only_button"))
-            ?: device.findObject(By.res("android", "permission_allow_button"))
-            ?: device.findObject(By.res("android", "permission_allow_foreground_only_button"))
-            ?: device.findObject(By.res("android", "button1"))
-        allow?.click()
-        device.waitForIdle(2_000)
+        runCatching {
+            val allow = device.findObject(By.res("android", "aerr_wait"))
+                ?: device.findObject(By.res("android", "aerr_close"))
+                ?: device.findObject(By.text("Wait"))
+                ?: device.findObject(By.text("WAIT"))
+                ?: device.findObject(By.text("Close app"))
+                ?: device.findObject(By.text("Close App"))
+                ?: device.findObject(By.text("Allow"))
+                ?: device.findObject(By.text("ALLOW"))
+                ?: device.findObject(By.text("While using the app"))
+                ?: device.findObject(By.res("com.android.permissioncontroller", "permission_allow_button"))
+                ?: device.findObject(By.res("com.android.permissioncontroller", "permission_allow_foreground_only_button"))
+                ?: device.findObject(By.res("android", "permission_allow_button"))
+                ?: device.findObject(By.res("android", "permission_allow_foreground_only_button"))
+                ?: device.findObject(By.res("android", "button1"))
+            allow?.click()
+            device.waitForIdle(2_000)
+        }
     }
 
     protected fun shell(command: String): String {

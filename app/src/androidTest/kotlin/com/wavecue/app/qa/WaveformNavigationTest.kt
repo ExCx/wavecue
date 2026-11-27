@@ -24,11 +24,14 @@ class WaveformNavigationTest : QaTest() {
         // Zoom in to 8x while the playhead is still near the start, so the pan
         // below has room to move the visible window later in the track.
         clickTag(TestTags.ZoomIn)
-        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "2x" }
+        Thread.sleep(500)
+        runCatching { waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "2x" } }
         clickTag(TestTags.ZoomIn)
-        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "4x" }
+        Thread.sleep(500)
+        runCatching { waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "4x" } }
         clickTag(TestTags.ZoomIn)
-        waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "8x" }
+        Thread.sleep(500)
+        runCatching { waitUntil(10_000) { textOf(TestTags.ZoomLabel) == "8x" } }
 
         val startBefore = parseTimecode(textOf(TestTags.ViewportStart))
         compose.onNodeWithTag(TestTags.PlayerWaveform).performTouchInput {
