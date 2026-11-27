@@ -54,8 +54,8 @@ class ExportTest : QaTest() {
         if (path.isEmpty()) {
             val downloadDir = shell("ls -la /sdcard/Download 2>&1 | head -40")
             val docsDir = shell("ls -la /sdcard/Documents 2>&1 | head -40")
-            val allText = shell("dumpsys window windows 2>/dev/null | grep -i 'wavecue-backup\\|Exported\\|Export failed' | head")
-            throw AssertionError("exported file 'wavecue-backup.json' not found. snackbar=$snackbar. Download dir: $downloadDir. Documents dir: $docsDir. window: $allText")
+            val allText = shell("uiautomator dump 2>/dev/null; cat /sdcard/window_dump.xml 2>/dev/null | sed 's/<[^>]*>//g' | tr '\\n' ' ' | head -c 500")
+            throw AssertionError("exported file 'wavecue-backup.json' not found. snackbar=$snackbar. Download dir: $downloadDir. Documents dir: $docsDir. ui: $allText")
         }
         val json = shell("cat '$path'")
         assertTrue(json, json.contains("\"app\": \"WaveCue\""))

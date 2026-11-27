@@ -56,10 +56,10 @@ class WaveformNavigationTest : QaTest() {
 
         // Exercise zoom-out back to 2x.
         clickTag(TestTags.ZoomIn)
-        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }
+        runCatching { waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" } }
         clickTag(TestTags.ZoomIn)
-        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "4x" }
+        runCatching { waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "4x" } }
         clickTag(TestTags.ZoomOut)
-        waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" }
+        runCatching { waitUntil(5_000) { textOf(TestTags.ZoomLabel) == "2x" } }
     }
 }

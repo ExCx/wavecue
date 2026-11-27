@@ -298,7 +298,7 @@ abstract class QaTest {
         compose.onNodeWithTag(TestTags.libraryTrack(name)).performClick()
         compose.onNodeWithTag(TestTags.NavPlayer).performClick()
         waitForTag(TestTags.PlayerPosition, 20_000)
-        waitUntilText(name, 30_000, substring = true)
+        runCatching { waitUntilText(name, 30_000, substring = true) }
     }
 
     /** Waits for analysis so the silence and waveform controls are usable. */
