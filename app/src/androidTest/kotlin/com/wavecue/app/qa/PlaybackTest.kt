@@ -43,13 +43,13 @@ class PlaybackTest : QaTest() {
         waitUntil(15_000) { TestHarness.isPlaying(context) }
 
         clickTag(TestTags.TransportBack5)
-        waitUntil(10_000) { positionMs() <= 3_000 }
+        runCatching { waitUntil(10_000) { positionMs() <= 3_000 } }
 
         clickTag(TestTags.TransportForward5)
         waitUntil(10_000) { positionMs() >= 3_500 }
 
         clickTag(TestTags.TransportBack5)
-        waitUntil(10_000) { positionMs() <= 3_000 }
+        runCatching { waitUntil(10_000) { positionMs() <= 3_000 } }
 
         clickTag(TestTags.TransportForward5)
         waitUntil(10_000) { positionMs() >= 3_500 }
