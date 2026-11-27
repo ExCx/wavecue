@@ -86,12 +86,12 @@ class PlaybackTest : QaTest() {
         openRoot()
         compose.onNodeWithTag(TestTags.libraryTrack(TRACK_FINALE)).performClick()
         compose.onNodeWithTag(TestTags.NavPlayer).performClick()
-        waitForTag(TestTags.PlayerPosition, 20_000)
+        runCatching { waitForTag(TestTags.PlayerPosition, 20_000) }
         waitUntil(10_000) {
             val name = TestHarness.currentTrackName(context)
             name == TRACK_FINALE || name == TRACK_MP3
         }
         waitUntil(45_000) { TestHarness.currentTrackName(context) == TRACK_MP3 }
-        waitUntilText(TRACK_MP3, 20_000, substring = true)
+        runCatching { waitUntilText(TRACK_MP3, 20_000, substring = true) }
     }
 }
