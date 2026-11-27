@@ -162,25 +162,9 @@ object DocumentsUi {
                 ),
             15_000,
         ) ?: throw AssertionError("'Save' is missing from the document dialog. ${describeForeground()}")
-        // Confirm via Enter key (commits the filename in the dialog).
-        device.pressKeyCode(android.view.KeyEvent.KEYCODE_ENTER)
+        // Confirm by clicking Save.
+        save.click()
         device.waitForIdle(2_000)
-
-        // If still open, click Save.
-        if (device.findObject(By.pkg(TARGET_PKG)) == null) {
-            val saveBtn = waitAny(
-                pickerResource("action_menu_select") +
-                    pickerResource("save") +
-                    listOf(
-                        By.text(SAVE),
-                        By.desc(SAVE),
-                        By.res("android", "button1"),
-                    ),
-                10_000,
-            )
-            saveBtn?.click()
-            device.waitForIdle(2_000)
-        }
 
         // Handle a possible overwrite confirmation, then wait for the app to return.
         waitAny(

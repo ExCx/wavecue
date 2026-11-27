@@ -245,10 +245,7 @@ class PlaybackController @Inject constructor(
 
     private fun playCurrent() {
         val item = current.value ?: return
-        if (!requestFocus()) {
-            _errors.tryEmit("Audio focus is unavailable right now")
-            return
-        }
+        requestFocus()
         engine.load(Uri.parse(item.uri), item.name, autoPlay = true)
         PlaybackService.start(context)
     }
