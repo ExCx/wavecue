@@ -199,29 +199,27 @@ fun WaveformView(
 
                 // Square-root (compressed) amplitude scale so 24-bit and 16-bit
                 // files with different dynamic ranges render identically.
-                // dB-scale amplitude (floor -60 dBFS) so 24-bit and 16-bit
-                // files with very different dynamic ranges render identically.
+                // dB-scale amplitude (floor -96 dBFS, matching 16-bit dynamic
+                // range) so 24-bit and 16-bit files render identically. Values
+                // below -96 dBFS are clamped to 0 (inaudible).
                 fun ampToDbScale(v: Float): Float {
-                    val a = kotlin.math.abs(v).coerceIn(1e-6f, 1f)
+                    val a = kotlin.math.abs(v).coerceIn(1e-9f, 1f)
                     val db = (20.0 * kotlin.math.log10(a.toDouble())).toFloat()
-                    return ((db + 60f) / 60f).coerceIn(0f, 1f) * kotlin.math.sign(v)
+                    return ((db + 96f) / 96f).coerceIn(0f, 1f) * kotlin.math.sign(v)
                 }
                 val minV = ampToDbScale(level.min[bin] / 32768f)
                 val maxV = ampToDbScale(level.max[bin] / 32768f)
                 val rmsV = ampToDbScale(level.rms[bin] / 32768f)
                 val color = if (x <= playheadX) playedColor else musicColor
 
-                drawLine(
-                    color = color,
-                    start = Offset(x, centerY - maxV * amplitude),
-                    end = Offset(x, centerY - minV * amplitude),
-                    strokeWidth = 1.1f,
-                )
+                // Render only the RMS envelope so 24-bit and 16-bit files with
+                // different dynamic ranges look identical. The min/max peak
+                // envelope made high-dynamic-range files look like solid bars.
                 drawLine(
                     color = if (x <= playheadX) WaveCueColors.PrimaryDim else WaveCueColors.WaveformRms,
                     start = Offset(x, centerY - rmsV * amplitude),
                     end = Offset(x, centerY + rmsV * amplitude),
-                    strokeWidth = 1.1f,
+                    strokeWidth = 1.5f,
                 )
             }
         }
