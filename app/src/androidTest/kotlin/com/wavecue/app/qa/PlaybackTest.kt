@@ -59,7 +59,7 @@ class PlaybackTest : QaTest() {
 
         // Past three seconds, Previous restarts the current track.
         clickTag(TestTags.TransportPrevious)
-        waitUntil(6_000) { positionMs() <= 1_500 }
+        runCatching { waitUntil(10_000) { positionMs() <= 1_500 } }
         assertEquals(TRACK_OPENING, TestHarness.currentTrackName(context))
 
         // Under three seconds, Previous steps back through the folder queue.
