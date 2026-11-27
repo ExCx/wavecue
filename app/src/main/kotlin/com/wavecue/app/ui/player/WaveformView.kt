@@ -199,11 +199,16 @@ fun WaveformView(
 
                 // Square-root (compressed) amplitude scale so 24-bit and 16-bit
                 // files with different dynamic ranges render identically.
-                val minV = kotlin.math.sign(level.min[bin].toFloat()) *
-                    kotlin.math.sqrt(kotlin.math.abs(level.min[bin].toFloat()) / 32768f)
-                val maxV = kotlin.math.sign(level.max[bin].toFloat()) *
-                    kotlin.math.sqrt(kotlin.math.abs(level.max[bin].toFloat()) / 32768f)
-                val rmsV = kotlin.math.sqrt(level.rms[bin].toFloat() / 32768f)
+                // dB-scale amplitude (floor -60 dBFS) so 24-bit and 16-bit
+                // files with very different dynamic ranges render identically.
+                fun ampToDbScale(v: Float): Float {
+                    val a = kotlin.math.abs(v).coerceIn(1e-6f, 1f)
+                    val db = (20.0 * kotlin.math.log10(a.toDouble())).toFloat()
+                    return ((db + 60f) / 60f).coerceIn(0f, 1f) * kotlin.math.sign(v)
+                }
+                val minV = ampToDbScale(level.min[bin] / 32768f)
+                val maxV = ampToDbScale(level.max[bin] / 32768f)
+                val rmsV = ampToDbScale(level.rms[bin] / 32768f)
                 val color = if (x <= playheadX) playedColor else musicColor
 
                 drawLine(

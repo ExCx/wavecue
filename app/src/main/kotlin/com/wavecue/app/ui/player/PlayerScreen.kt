@@ -6,6 +6,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -133,7 +135,7 @@ fun PlayerScreen(
     ) { uri -> uri?.let(viewModel::exportNotes) }
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 16.dp).verticalScroll(rememberScrollState())) {
             Spacer(Modifier.height(10.dp))
             TrackHeader(
                 title = track?.name ?: media?.name ?: "Nothing loaded",
@@ -368,7 +370,7 @@ fun PlayerScreen(
                 )
             }
 
-            Box(Modifier.weight(1f).heightIn(min = 160.dp)) {
+            Box(Modifier.height(200.dp)) {
                 when (section) {
                     0 -> FlagList(
                         flags = flags,
