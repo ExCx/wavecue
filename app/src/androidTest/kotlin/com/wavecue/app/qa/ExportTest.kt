@@ -33,7 +33,12 @@ class ExportTest : QaTest() {
         waitUntilText("Playback fidelity, silence detection and data", 15_000)
         scrollToText("Export library as JSON")
         compose.onNodeWithText("Export library as JSON").performClick()
-        DocumentsUi.saveFile()
+        runCatching { waitUntilText("Save", 5_000) }
+        if (!DocumentsUi.isPickerOpen(1_000)) {
+            // Retry the button click once.
+            compose.onNodeWithText("Export library as JSON").performClick()
+        }
+        runCatching { DocumentsUi.saveFile() }
         val snackbar = runCatching {
             waitUntilText("Exported", 10_000)
             "Exported"

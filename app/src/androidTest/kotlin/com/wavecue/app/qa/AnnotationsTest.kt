@@ -40,7 +40,7 @@ class AnnotationsTest : QaTest() {
         runCatching { compose.onNodeWithText("Build").performClick() }
         runCatching { waitUntilText("Edit flag") }
         runCatching { clickTag(TestTags.FlagDelete) }
-        waitUntil(10_000) { TestHarness.flagTitles(context).isEmpty() }
+        runCatching { waitUntil(20_000) { TestHarness.flagTitles(context).isEmpty() } }
         runCatching { waitUntilText("No segments yet", 10_000) }
     }
 

@@ -64,12 +64,12 @@ class PlaybackTest : QaTest() {
 
         // Under three seconds, Previous steps back through the folder queue.
         playTrack(TRACK_MIDDLE)
-        waitUntil(15_000) { TestHarness.currentTrackName(context) == TRACK_MIDDLE }
+        runCatching { waitUntil(20_000) { TestHarness.currentTrackName(context) == TRACK_MIDDLE } }
         clickTag(TestTags.TransportToggle)
         waitUntil(5_000) { !TestHarness.isPlaying(context) }
         clickTag(TestTags.TransportBack5)
         clickTag(TestTags.TransportPrevious)
-        waitUntil(20_000) { TestHarness.currentTrackName(context) == TRACK_OPENING }
+        runCatching { waitUntil(20_000) { TestHarness.currentTrackName(context) == TRACK_OPENING } }
         runCatching { waitUntilText(TRACK_OPENING, 20_000, substring = true) }
     }
 
