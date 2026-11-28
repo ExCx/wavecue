@@ -41,6 +41,10 @@ object TestTags {
 
     const val SilenceCreate = "silence.create"
 
+    const val TabSegments = "player.tab.segments"
+    const val TabNotes = "player.tab.notes"
+    const val TabOutput = "player.tab.output"
+
     const val SettingsExclusive = "settings.exclusive"
     const val SettingsBitPerfect = "settings.bitPerfect"
     const val SettingsFollowPlayhead = "settings.followPlayhead"

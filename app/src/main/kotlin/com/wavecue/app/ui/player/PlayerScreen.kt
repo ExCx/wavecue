@@ -47,8 +47,6 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +56,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -135,8 +135,15 @@ fun PlayerScreen(
     ) { uri -> uri?.let(viewModel::exportNotes) }
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 16.dp).verticalScroll(rememberScrollState())) {
-            Spacer(Modifier.height(10.dp))
+        Column(Modifier.fillMaxSize()) {
+            Column(
+                Modifier
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 10.dp)
+            ) {
             TrackHeader(
                 title = track?.name ?: media?.name ?: "Nothing loaded",
                 queueLabel = queueLabel,
@@ -339,38 +346,33 @@ fun PlayerScreen(
                 )
             }
 
-            Spacer(Modifier.height(6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
+            } // end header column
+
+            TabRow(selectedTabIndex = section) {
+                Tab(
                     selected = section == 0,
                     onClick = { section = 0 },
-                    label = { Text("Segments ${flags.size}") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = WaveCueColors.PrimaryDim,
-                        selectedLabelColor = WaveCueColors.TextPrimary,
-                    ),
+                    text = { Text("Segments ${flags.size}") },
+                    icon = { Icon(Icons.Filled.Flag, contentDescription = null) },
+                    modifier = Modifier.testTag(TestTags.TabSegments),
                 )
-                FilterChip(
+                Tab(
                     selected = section == 1,
                     onClick = { section = 1 },
-                    label = { Text("Notes ${notes.size}") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = WaveCueColors.PrimaryDim,
-                        selectedLabelColor = WaveCueColors.TextPrimary,
-                    ),
+                    text = { Text("Notes ${notes.size}") },
+                    icon = { Icon(Icons.Filled.NoteAlt, contentDescription = null) },
+                    modifier = Modifier.testTag(TestTags.TabNotes),
                 )
-                FilterChip(
+                Tab(
                     selected = section == 2,
                     onClick = { section = 2 },
-                    label = { Text("Output") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = WaveCueColors.PrimaryDim,
-                        selectedLabelColor = WaveCueColors.TextPrimary,
-                    ),
+                    text = { Text("Output") },
+                    icon = { Icon(Icons.Filled.GraphicEq, contentDescription = null) },
+                    modifier = Modifier.testTag(TestTags.TabOutput),
                 )
             }
 
-            Box(Modifier.height(200.dp)) {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (section) {
                     0 -> FlagList(
                         flags = flags,
