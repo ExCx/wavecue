@@ -87,51 +87,44 @@ object DocumentsUi {
         folder.click()
         d.waitForIdle()
 
-        var use = waitAnyEnabled(useThisFolderSelectors(), 12_000)
+        // Find the "Use this folder" confirmation. Some DocumentsUI builds hide
+        // it for the folder the picker opens in; step up and back in to reveal it.
+        var use = waitAnyEnabled(useThisFolderSelectors(), 8_000)
         if (use == null) {
-            // Some DocumentsUI builds hide the confirmation for the folder the
-            // picker opened in; stepping up and back in makes it appear.
             if (navigateUp()) {
                 Thread.sleep(500)
                 d.findObject(By.text(name))?.click()
                 d.waitForIdle()
             }
-            use = waitAnyEnabled(useThisFolderSelectors(), 10_000)
+            use = waitAnyEnabled(useThisFolderSelectors(), 8_000)
         }
         if (use == null) {
             throw AssertionError("'Use this folder' is missing. ${describeForeground()}")
         }
-        use.click()
-        d.waitForIdle()
 
-        // The confirmation sometimes needs a second tap or an Enter keypress on
-        // slower emulators.
+        // Confirm. Re-find the control each attempt (nodes go stale) and click
+        // both via accessibility and by centre coordinate for reliability.
         var returned = false
-        val confirmDeadline = System.currentTimeMillis() + 10_000
+        val confirmDeadline = System.currentTimeMillis() + 20_000
         while (System.currentTimeMillis() < confirmDeadline && !returned) {
-            waitAny(listOf(By.text("Allow"), By.text("ALLOW"), By.res("android", "button1")), 2_000)?.click()
-            d.waitForIdle(1_000)
             if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
-            // Retry the confirmation tap if the picker is still open.
-            if (d.findObject(By.pkg(PICKER_PKGS[0])) != null || d.findObject(By.pkg(PICKER_PKGS[1])) != null) {
-                use.click()
-                d.waitForIdle(1_000)
-            }
-        }
+            waitAny(listOf(By.text("Allow"), By.text("ALLOW"), By.res("android", "button1")), 1_500)?.click()
+            d.waitForIdle(500)
+            if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
 
-        // Wait for the app to fully return.
-        val returnDeadline = System.currentTimeMillis() + 10_000
-        while (System.currentTimeMillis() < returnDeadline) {
-            if (d.findObject(By.pkg(TARGET_PKG)) != null) { returned = true; break }
-            // Retry the confirmation if the picker is still on screen.
-            if (d.findObject(By.pkg(PICKER_PKGS[0])) != null || d.findObject(By.pkg(PICKER_PKGS[1])) != null) {
-                use.click()
-                d.waitForIdle(1_000)
+            val fresh = runCatching { waitAnyEnabled(useThisFolderSelectors(), 1_500) }.getOrNull()
+            if (fresh != null) {
+                runCatching {
+                    val b = fresh.visibleBounds
+                    d.click(b.centerX(), b.centerY())
+                }.onFailure { runCatching { fresh.click() } }
+                d.waitForIdle(800)
             }
             dismissSystemDialog()
-            Thread.sleep(500)
         }
+
         d.waitForIdle(2_000)
+        if (!returned && d.findObject(By.pkg(TARGET_PKG)) != null) returned = true
         if (!returned) {
             throw AssertionError("picker did not return to the app. ${describeForeground()}")
         }
