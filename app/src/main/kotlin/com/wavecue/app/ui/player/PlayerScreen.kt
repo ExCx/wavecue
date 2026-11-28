@@ -136,14 +136,46 @@ fun PlayerScreen(
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            Column(
-                Modifier
-                    .weight(1f, fill = false)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 10.dp)
-            ) {
+            TabRow(selectedTabIndex = section) {
+                Tab(
+                    selected = section == 0,
+                    onClick = { section = 0 },
+                    text = { Text("Player") },
+                    icon = { Icon(Icons.Filled.GraphicEq, contentDescription = null) },
+                    modifier = Modifier.testTag(TestTags.TabPlayer),
+                )
+                Tab(
+                    selected = section == 1,
+                    onClick = { section = 1 },
+                    text = { Text("Segments ${flags.size}") },
+                    icon = { Icon(Icons.Filled.Flag, contentDescription = null) },
+                    modifier = Modifier.testTag(TestTags.TabSegments),
+                )
+                Tab(
+                    selected = section == 2,
+                    onClick = { section = 2 },
+                    text = { Text("Notes ${notes.size}") },
+                    icon = { Icon(Icons.Filled.NoteAlt, contentDescription = null) },
+                    modifier = Modifier.testTag(TestTags.TabNotes),
+                )
+                Tab(
+                    selected = section == 3,
+                    onClick = { section = 3 },
+                    text = { Text("Output") },
+                    icon = { Icon(Icons.Filled.PlayArrow, contentDescription = null) },
+                    modifier = Modifier.testTag(TestTags.TabOutput),
+                )
+            }
+
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when (section) {
+                    0 -> Column(
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp)
+                            .padding(top = 10.dp)
+                    ) {
             TrackHeader(
                 title = track?.name ?: media?.name ?: "Nothing loaded",
                 queueLabel = queueLabel,
@@ -346,35 +378,8 @@ fun PlayerScreen(
                 )
             }
 
-            } // end header column
-
-            TabRow(selectedTabIndex = section) {
-                Tab(
-                    selected = section == 0,
-                    onClick = { section = 0 },
-                    text = { Text("Segments ${flags.size}") },
-                    icon = { Icon(Icons.Filled.Flag, contentDescription = null) },
-                    modifier = Modifier.testTag(TestTags.TabSegments),
-                )
-                Tab(
-                    selected = section == 1,
-                    onClick = { section = 1 },
-                    text = { Text("Notes ${notes.size}") },
-                    icon = { Icon(Icons.Filled.NoteAlt, contentDescription = null) },
-                    modifier = Modifier.testTag(TestTags.TabNotes),
-                )
-                Tab(
-                    selected = section == 2,
-                    onClick = { section = 2 },
-                    text = { Text("Output") },
-                    icon = { Icon(Icons.Filled.GraphicEq, contentDescription = null) },
-                    modifier = Modifier.testTag(TestTags.TabOutput),
-                )
-            }
-
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                when (section) {
-                    0 -> FlagList(
+                    }
+                    1 -> FlagList(
                         flags = flags,
                         onSelect = {
                             editingFlag = it
@@ -387,7 +392,7 @@ fun PlayerScreen(
                             showFlagSheet = true
                         },
                     )
-                    1 -> NoteList(
+                    2 -> NoteList(
                         notes = notes,
                         onSelect = {
                             editingNote = it
@@ -411,8 +416,7 @@ fun PlayerScreen(
                         onOpenLibrary = onOpenLibrary,
                     )
                 }
-            }
-        }
+            }        }
 
         SnackbarHost(
             hostState = snackbar,

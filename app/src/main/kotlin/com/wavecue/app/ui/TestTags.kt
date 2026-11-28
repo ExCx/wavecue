@@ -41,6 +41,7 @@ object TestTags {
 
     const val SilenceCreate = "silence.create"
 
+    const val TabPlayer = "player.tab.player"
     const val TabSegments = "player.tab.segments"
     const val TabNotes = "player.tab.notes"
     const val TabOutput = "player.tab.output"
