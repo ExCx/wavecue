@@ -23,7 +23,7 @@ class WavPcmSource private constructor(
 
     override val sampleRate: Int = header.sampleRate
     override val channelCount: Int = header.channels
-    override val bitDepth: Int = header.bitsPerSample
+    override val bitDepth: Int = header.validBitsPerSample
     override val isFloat: Boolean = header.isFloat
     override val codec: String = if (header.isFloat) "WAV float" else "WAV PCM"
     override val durationFrames: Long = header.durationFrames
@@ -61,64 +61,22 @@ class WavPcmSource private constructor(
         val framesRead = offset / blockAlign
         if (framesRead <= 0) return 0
 
-        android.util.Log.d("WavPcmSource", "readFloat: dataOffset=$dataOffset framePosition=$framePosition bytesNeeded=$bytesNeeded offset=$offset framesRead=$framesRead firstBytes=${byteBuffer[0]},${byteBuffer[1]},${byteBuffer[2]},${byteBuffer[3]},${byteBuffer[4]},${byteBuffer[5]}")
-
         decode(byteBuffer, framesRead, buffer)
         framePosition += framesRead
         return framesRead
     }
 
     private fun decode(bytes: ByteArray, frames: Int, out: FloatArray) {
-        val channels = channelCount
-        val bits = header.bitsPerSample
-        val floatData = header.isFloat
-        var byteIndex = 0
-        var sampleIndex = 0
-        val samples = frames * channels
-        when {
-            floatData && bits == 32 -> {
-                while (sampleIndex < samples) {
-                    val v = readInt32(bytes, byteIndex)
-                    out[sampleIndex++] = Float.fromBits(v)
-                    byteIndex += 4
-                }
-            }
-            bits == 16 -> {
-                while (sampleIndex < samples) {
-                    val v = (bytes[byteIndex].toInt() and 0xFF) or
-                        (bytes[byteIndex + 1].toInt() shl 8)
-                    out[sampleIndex++] = v / 32768f
-                    byteIndex += 2
-                }
-            }
-            bits == 24 -> {
-                while (sampleIndex < samples) {
-                    val v = (bytes[byteIndex].toInt() and 0xFF) or
-                        ((bytes[byteIndex + 1].toInt() and 0xFF) shl 8) or
-                        (bytes[byteIndex + 2].toInt() shl 16)
-                    out[sampleIndex++] = v / 8388608f
-                    byteIndex += 3
-                }
-            }
-            bits == 32 -> {
-                while (sampleIndex < samples) {
-                    val v = (bytes[byteIndex].toInt() and 0xFF) or
-                        ((bytes[byteIndex + 1].toInt() and 0xFF) shl 8) or
-                        ((bytes[byteIndex + 2].toInt() and 0xFF) shl 16) or
-                        (bytes[byteIndex + 3].toInt() shl 24)
-                    out[sampleIndex++] = (v / 2147483648.0).toFloat()
-                    byteIndex += 4
-                }
-            }
-            bits == 8 -> {
-                while (sampleIndex < samples) {
-                    val v = (bytes[byteIndex].toInt() and 0xFF) - 128
-                    out[sampleIndex++] = v / 128f
-                    byteIndex += 1
-                }
-            }
-            else -> throw IOException("Unsupported WAV bit depth: $bits")
-        }
+        decodeWavSamples(
+            bytes = bytes,
+            frames = frames,
+            channels = channelCount,
+            bytesPerSample = header.bytesPerSample,
+            validBits = header.validBitsPerSample,
+            isFloat = header.isFloat,
+            framePadding = blockAlign - (channelCount * header.bytesPerSample),
+            out = out,
+        )
     }
 
     override fun close() {
@@ -194,3 +152,100 @@ class WavPcmSource private constructor(
                 ((bytes[offset + 3].toInt() and 0xFF) shl 24)
     }
 }
+
+/**
+ * Byte-exact WAV sample conversion, shared by playback and analysis and exposed
+ * for regression tests. Handles packed (3-byte) and padded (4-byte) 24-bit PCM,
+ * all integer widths, and IEEE float.
+ */
+internal fun decodeWavSamples(
+    bytes: ByteArray,
+    frames: Int,
+    channels: Int,
+    bytesPerSample: Int,
+    validBits: Int,
+    isFloat: Boolean,
+    framePadding: Int,
+    out: FloatArray,
+) {
+    var byteIndex = 0
+    var sampleIndex = 0
+
+    when {
+        isFloat && bytesPerSample == 4 -> {
+            for (f in 0 until frames) {
+                for (c in 0 until channels) {
+                    val v = Float.fromBits(readInt32LE(bytes, byteIndex))
+                    out[sampleIndex++] = if (v.isFinite()) v else 0f
+                    byteIndex += 4
+                }
+                byteIndex += framePadding
+            }
+        }
+        isFloat && bytesPerSample == 8 -> {
+            for (f in 0 until frames) {
+                for (c in 0 until channels) {
+                    val lo = readInt32LE(bytes, byteIndex).toLong() and 0xFFFFFFFFL
+                    val hi = readInt32LE(bytes, byteIndex + 4).toLong()
+                    val v = Double.fromBits(lo or (hi shl 32)).toFloat()
+                    out[sampleIndex++] = if (v.isFinite()) v else 0f
+                    byteIndex += 8
+                }
+                byteIndex += framePadding
+            }
+        }
+        bytesPerSample == 1 -> {
+            for (f in 0 until frames) {
+                for (c in 0 until channels) {
+                    out[sampleIndex++] = ((bytes[byteIndex].toInt() and 0xFF) - 128) / 128f
+                    byteIndex += 1
+                }
+                byteIndex += framePadding
+            }
+        }
+        bytesPerSample == 2 -> {
+            for (f in 0 until frames) {
+                for (c in 0 until channels) {
+                    val v = (bytes[byteIndex].toInt() and 0xFF) or
+                        (bytes[byteIndex + 1].toInt() shl 8)
+                    out[sampleIndex++] = v / 32768f
+                    byteIndex += 2
+                }
+                byteIndex += framePadding
+            }
+        }
+        bytesPerSample == 3 -> {
+            for (f in 0 until frames) {
+                for (c in 0 until channels) {
+                    val v32 = ((bytes[byteIndex].toInt() and 0xFF) shl 8) or
+                        ((bytes[byteIndex + 1].toInt() and 0xFF) shl 16) or
+                        ((bytes[byteIndex + 2].toInt() and 0xFF) shl 24)
+                    out[sampleIndex++] = (v32 / 2147483648.0).toFloat()
+                    byteIndex += 3
+                }
+                byteIndex += framePadding
+            }
+        }
+        bytesPerSample == 4 -> {
+            // Integer container. Scale by the number of valid bits so a
+            // 24-in-32 sample (valid data in the low 24 bits) normalises to
+            // the same range as a packed 24-bit sample.
+            val scale = (1L shl (validBits.coerceIn(1, 31) - 1)).toDouble()
+            for (f in 0 until frames) {
+                for (c in 0 until channels) {
+                    val v = readInt32LE(bytes, byteIndex)
+                    out[sampleIndex++] = (v / scale).toFloat().coerceIn(-1f, 1f)
+                    byteIndex += 4
+                }
+                byteIndex += framePadding
+            }
+        }
+        else -> throw IOException("Unsupported WAV bytes per sample: $bytesPerSample")
+    }
+}
+
+internal fun readInt32LE(bytes: ByteArray, offset: Int): Int =
+    (bytes[offset].toInt() and 0xFF) or
+        ((bytes[offset + 1].toInt() and 0xFF) shl 8) or
+        ((bytes[offset + 2].toInt() and 0xFF) shl 16) or
+        ((bytes[offset + 3].toInt() and 0xFF) shl 24)

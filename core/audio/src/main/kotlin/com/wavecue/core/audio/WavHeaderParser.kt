@@ -20,10 +20,13 @@ data class WavHeader(
     val sampleRate: Int,
     val blockAlign: Int,
     val bitsPerSample: Int,
+    val validBitsPerSample: Int = bitsPerSample,
     val isFloat: Boolean,
     val dataOffset: Long,
     val dataSize: Long,
 ) {
+    /** Container bytes per sample, derived from block align (handles 24-in-32 padding). */
+    val bytesPerSample: Int get() = if (channels > 0) blockAlign / channels else (bitsPerSample + 7) / 8
     val durationFrames: Long get() = if (blockAlign > 0) dataSize / blockAlign else 0
     val durationMs: Long get() = if (sampleRate > 0) durationFrames * 1000 / sampleRate else 0
 }
@@ -101,33 +104,49 @@ object WavHeaderParser {
     }
 
     private fun parseFormat(bytes: ByteArray): WavHeader {
-        var tag = readInt16(bytes, 0)
+        val rawTag = readInt16(bytes, 0)
+        var tag = rawTag
         val channels = readInt16(bytes, 2)
         val sampleRate = readInt32(bytes, 4)
         val blockAlign = readInt16(bytes, 12)
         val bits = readInt16(bytes, 14)
+        var validBits = bits
 
-        if (tag == WAVE_FORMAT_EXTENSIBLE && bytes.size >= 40) {
-            // SubFormat GUID starts at offset 24; its first two bytes hold the format code.
+        if (rawTag == WAVE_FORMAT_EXTENSIBLE && bytes.size >= 40) {
+            // wValidBitsPerSample at offset 18; SubFormat GUID code at offset 24.
+            val extValidBits = readInt16(bytes, 18)
+            if (extValidBits in 1..bits) validBits = extValidBits
             tag = readInt16(bytes, 24)
         }
+
         if (channels !in 1..8) throw IOException("Unsupported channel count: $channels")
         if (sampleRate <= 0) throw IOException("Invalid sample rate: $sampleRate")
         val isFloat = tag == WAVE_FORMAT_IEEE_FLOAT
         if (tag != WAVE_FORMAT_PCM && !isFloat) {
             throw IOException("Unsupported WAV encoding: 0x%04X".format(tag))
         }
-        if (bits != 8 && bits != 16 && bits != 24 && bits != 32) {
+        if (bits !in intArrayOf(8, 16, 24, 32, 64)) {
             throw IOException("Unsupported WAV bit depth: $bits")
         }
-        val computedAlign = channels * bits / 8
-        val effectiveAlign = if (blockAlign > 0) blockAlign else computedAlign
+
+        val computedAlign = channels * ((bits + 7) / 8)
+        val effectiveAlign = if (blockAlign >= computedAlign && blockAlign % channels == 0) {
+            blockAlign
+        } else {
+            computedAlign
+        }
+        val bytesPerSample = effectiveAlign / channels
+        if ((!isFloat && bytesPerSample !in 1..4) || (isFloat && bytesPerSample != 4 && bytesPerSample != 8)) {
+            throw IOException("Unsupported WAV sample container size: $bytesPerSample bytes")
+        }
+
         return WavHeader(
             formatTag = tag,
             channels = channels,
             sampleRate = sampleRate,
             blockAlign = effectiveAlign,
             bitsPerSample = bits,
+            validBitsPerSample = validBits.coerceIn(1, bytesPerSample * 8),
             isFloat = isFloat,
             dataOffset = 0,
             dataSize = 0,

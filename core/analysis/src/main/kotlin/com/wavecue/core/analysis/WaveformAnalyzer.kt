@@ -52,7 +52,8 @@ class WaveformAnalyzer(private val context: Context) {
                 var sampleIndex = 0
                 val sampleEnd = framesRead * channels
                 while (sampleIndex < sampleEnd) {
-                    val value = buffer[sampleIndex]
+                    val raw = buffer[sampleIndex]
+                    val value = if (raw.isFinite()) raw else 0f
                     if (value < binMin) binMin = value
                     if (value > binMax) binMax = value
                     binSumSq += value.toDouble() * value

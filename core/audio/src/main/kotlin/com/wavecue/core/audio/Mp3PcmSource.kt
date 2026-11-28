@@ -143,30 +143,51 @@ class Mp3PcmSource private constructor(
         out.order(ByteOrder.LITTLE_ENDIAN)
         val channels = actualChannels
         val outSamples = framesToCopy * channels
+        var bytePos = out.position() + skip * bytesPerFrame
 
         when (pcmEncoding) {
             AudioFormat.ENCODING_PCM_FLOAT -> {
                 val floats = out.asFloatBuffer()
                 floats.position(skip * channels)
                 floats.get(buffer, 0, outSamples)
+                for (i in 0 until outSamples) {
+                    if (!buffer[i].isFinite()) buffer[i] = 0f
+                }
             }
-            AudioFormat.ENCODING_PCM_16BIT -> {
-                val shorts = out.asShortBuffer()
-                shorts.position(skip * channels)
+            AudioFormat.ENCODING_PCM_24BIT_PACKED -> {
                 var i = 0
                 while (i < outSamples) {
-                    buffer[i] = shorts.get() / 32768f
-                    i++
+                    val v32 = ((out.get(bytePos).toInt() and 0xFF) shl 8) or
+                        ((out.get(bytePos + 1).toInt() and 0xFF) shl 16) or
+                        ((out.get(bytePos + 2).toInt() and 0xFF) shl 24)
+                    buffer[i++] = (v32 / 2147483648.0).toFloat()
+                    bytePos += 3
+                }
+            }
+            AudioFormat.ENCODING_PCM_32BIT -> {
+                var i = 0
+                while (i < outSamples) {
+                    val v = (out.get(bytePos).toInt() and 0xFF) or
+                        ((out.get(bytePos + 1).toInt() and 0xFF) shl 8) or
+                        ((out.get(bytePos + 2).toInt() and 0xFF) shl 16) or
+                        (out.get(bytePos + 3).toInt() shl 24)
+                    buffer[i++] = (v / 2147483648.0).toFloat()
+                    bytePos += 4
+                }
+            }
+            AudioFormat.ENCODING_PCM_8BIT -> {
+                var i = 0
+                while (i < outSamples) {
+                    buffer[i++] = ((out.get(bytePos).toInt() and 0xFF) - 128) / 128f
+                    bytePos += 1
                 }
             }
             else -> {
-                // Fall back to 16-bit interpretation rather than failing playback.
                 val shorts = out.asShortBuffer()
                 shorts.position(skip * channels)
                 var i = 0
                 while (i < outSamples) {
-                    buffer[i] = shorts.get() / 32768f
-                    i++
+                    buffer[i++] = shorts.get() / 32768f
                 }
             }
         }
@@ -184,7 +205,7 @@ class Mp3PcmSource private constructor(
         val channels = format.intOr(MediaFormat.KEY_CHANNEL_COUNT, actualChannels)
         if (channels > 0) actualChannels = channels
         pcmEncoding = format.intOr(MediaFormat.KEY_PCM_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
-        bytesPerSample = if (pcmEncoding == AudioFormat.ENCODING_PCM_FLOAT) 4 else 2
+        bytesPerSample = bytesForEncoding(pcmEncoding)
         bytesPerFrame = actualChannels * bytesPerSample
     }
 
@@ -220,6 +241,15 @@ class Mp3PcmSource private constructor(
     }
 
     companion object {
+        private fun bytesForEncoding(encoding: Int): Int = when (encoding) {
+            AudioFormat.ENCODING_PCM_8BIT -> 1
+            AudioFormat.ENCODING_PCM_16BIT -> 2
+            AudioFormat.ENCODING_PCM_24BIT_PACKED -> 3
+            AudioFormat.ENCODING_PCM_32BIT,
+            AudioFormat.ENCODING_PCM_FLOAT -> 4
+            else -> 2
+        }
+
         fun open(context: Context, uri: Uri): Mp3PcmSource {
             val pfd = context.contentResolver.openFileDescriptor(uri, "r")
                 ?: throw IOException("Cannot open file descriptor for $uri")
@@ -253,6 +283,13 @@ class Mp3PcmSource private constructor(
                     throw IOException("Unsupported MP3 format: $rate Hz, $channels ch")
                 }
                 extractor.selectTrack(trackIndex)
+                // Prefer IEEE float output so decoding is bit-depth agnostic;
+                // fall back to the format's native encoding if unsupported.
+                if (selectedFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) {
+                    try {
+                        selectedFormat.setInteger(MediaFormat.KEY_PCM_ENCODING, AudioFormat.ENCODING_PCM_FLOAT)
+                    } catch (_: Exception) { }
+                }
                 val newDecoder = MediaCodec.createDecoderByType(mime)
                 decoder = newDecoder
                 newDecoder.configure(selectedFormat, null, null, 0)
