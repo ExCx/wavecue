@@ -54,7 +54,7 @@ class WavPcmSource private constructor(
 
         var offset = 0
         while (offset < bytesNeeded) {
-            val read = channel.read(ByteBuffer.wrap(byteBuffer, offset, bytesNeeded - offset))
+            val read = channel.read(ByteBuffer.wrap(byteBuffer, offset, bytesNeeded - offset), dataOffset + framePosition * blockAlign + offset.toLong())
             if (read < 0) break
             offset += read
         }
