@@ -61,6 +61,8 @@ class WavPcmSource private constructor(
         val framesRead = offset / blockAlign
         if (framesRead <= 0) return 0
 
+        android.util.Log.d("WavPcmSource", "readFloat: dataOffset=$dataOffset framePosition=$framePosition bytesNeeded=$bytesNeeded offset=$offset framesRead=$framesRead firstBytes=${byteBuffer[0]},${byteBuffer[1]},${byteBuffer[2]},${byteBuffer[3]},${byteBuffer[4]},${byteBuffer[5]}")
+
         decode(byteBuffer, framesRead, buffer)
         framePosition += framesRead
         return framesRead
