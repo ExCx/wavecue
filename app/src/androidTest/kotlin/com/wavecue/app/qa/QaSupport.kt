@@ -149,6 +149,11 @@ abstract class QaTest {
         }
     }
 
+    protected fun openPlayerTab() = clickTag(TestTags.TabPlayer)
+    protected fun openSegmentsTab() = clickTag(TestTags.TabSegments)
+    protected fun openNotesTab() = clickTag(TestTags.TabNotes)
+    protected fun openOutputTab() = clickTag(TestTags.TabOutput)
+
     protected fun clickTag(tag: String) {
         compose.onNodeWithTag(tag).performClick()
         compose.waitForIdle()

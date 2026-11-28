@@ -19,6 +19,7 @@ class AnnotationsTest : QaTest() {
         playTrack(TRACK_OPENING)
 
         addFlag("Drop", "0:07.500")
+        openSegmentsTab()
         runCatching { waitUntilText("0:07.500", 10_000) }
         runCatching { waitUntilText("Drop", 10_000) }
         runCatching { waitUntilText("Segments 1", 10_000) }
@@ -34,6 +35,7 @@ class AnnotationsTest : QaTest() {
         // The annotation lives in the database, not in the activity.
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag(TestTags.NavPlayer).performClick()
+        openSegmentsTab()
         runCatching { waitUntilText("Build", 20_000) }
         runCatching { waitUntilText("0:07.500", 20_000) }
 
@@ -49,6 +51,7 @@ class AnnotationsTest : QaTest() {
         playTrack(TRACK_OPENING)
 
         addNote("Check the low end", "0:10.000")
+        openNotesTab()
         runCatching { waitUntilText("Notes 1", 20_000) }
         compose.waitForIdle()
         runCatching { compose.onNodeWithText("Notes 1", substring = true).performClick() }

@@ -43,6 +43,7 @@ class SilenceDetectionTest : QaTest() {
         waitUntilText("Silence detected", 45_000)
         clickTag(TestTags.SilenceCreate)
         runCatching { waitUntil(30_000) { TestHarness.flagTitles(context) == listOf("Gap 1") } }
+        openSegmentsTab()
         runCatching { waitUntilText("Segments 1", 10_000) }
         runCatching { waitUntilText("Gap 1", 10_000) }
         runCatching { waitUntilText("0:14.500", 10_000) }
